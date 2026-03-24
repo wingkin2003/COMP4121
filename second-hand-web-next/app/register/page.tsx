@@ -2,59 +2,40 @@ import Link from "next/link";
 
 export default function RegisterPage() {
   return (
-    <form className="login-container" action="">
-      <h1>Create Account</h1>
-
-      <div className="form-group">
-        <label htmlFor="reg-username">Username</label>
-        <input
-          id="reg-username"
-          type="text"
-          required
-          minLength={7}
-          maxLength={7}
-          placeholder="Enter 7 characters"
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="reg-email">Email</label>
-        <input
-          id="reg-email"
-          type="email"
-          required
-          placeholder="Enter your email"
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="reg-password">Password</label>
+    <section className="stack">
+      <form className="card form-stack" action="">
+        <h1>Account setup (MVP)</h1>
+        <p className="muted">
+          Placeholder registration UI retained for future backend auth wiring.
+        </p>
+        <input id="reg-username" type="text" required placeholder="Username" />
+        <input id="reg-email" type="email" required placeholder="Email" />
         <input
           id="reg-password"
           type="password"
           required
           placeholder="Create password"
         />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="reg-confirm-password">Confirm Password</label>
         <input
           id="reg-confirm-password"
           type="password"
           required
           placeholder="Confirm password"
         />
+        <button className="btn btn-primary" type="submit">
+          Register
+        </button>
+        <div className="register-link">
+          <Link href="/">Back to homepage</Link>
+        </div>
+      </form>
+      <div className="card">
+        <h2>Next phase</h2>
+        <p className="muted">
+          Connect this form to NextAuth and Prisma once backend services are
+          configured.
+        </p>
       </div>
-
-      <div className="register-link">
-        <Link href="/">Already have an account? Login here</Link>
-      </div>
-
-      <div className="login-reset">
-        <input type="submit" value="Register" />
-        <input type="reset" value="Clear" />
-      </div>
-    </form>
+    </section>
   );
 }
