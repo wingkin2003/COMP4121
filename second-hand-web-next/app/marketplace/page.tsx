@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { ProductCard } from "@/components/product-card";
 import { getProducts } from "@/lib/mvp-data";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
+  Product,
   ProductCategory,
   ProductCondition,
 } from "@/lib/mvp-types";
@@ -18,8 +19,11 @@ export default function MarketplacePage() {
   const [category, setCategory] = useState<"All" | ProductCategory>("All");
   const [condition, setCondition] = useState<"All" | ProductCondition>("All");
   const [sortBy, setSortBy] = useState<SortMode>("newest");
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const products = useMemo(() => getProducts(), []);
+  useEffect(() => {
+    setProducts(getProducts());
+  }, []);
 
   const filtered = useMemo(() => {
     return [...products]
