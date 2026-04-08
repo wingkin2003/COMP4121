@@ -61,31 +61,48 @@ export default function CheckoutPage() {
   };
 
   return (
-    <section className="stack">
-      <div className="card">
+    <>
+      {message && (
+        <div className="login-message success">{message}</div>
+      )}
+
+      <form className="login-container checkout-container" onSubmit={handlePay}>
         <h1>Checkout</h1>
-        <p className="muted">
-          MVP test payment flow with transparent 4% platform commission.
-        </p>
-        <div className="summary">
-          <p>Items total: {formatHKD(subtotal)}</p>
-          <p>Platform commission (4%): {formatHKD(commission)}</p>
-          <p>Estimated seller payout: {formatHKD(sellerPayout)}</p>
-          <p className="price">Amount charged: {formatHKD(subtotal)}</p>
+
+        <div className="checkout-summary">
+          <div className="checkout-row">
+            <span>Items total</span>
+            <span>{formatHKD(subtotal)}</span>
+          </div>
+          <div className="checkout-row">
+            <span>Platform commission (4%)</span>
+            <span>{formatHKD(commission)}</span>
+          </div>
+          <div className="checkout-row">
+            <span>Seller payout</span>
+            <span>{formatHKD(sellerPayout)}</span>
+          </div>
+          <div className="checkout-row checkout-total">
+            <span>Amount charged</span>
+            <span>{formatHKD(subtotal)}</span>
+          </div>
         </div>
-        <form className="form-stack" onSubmit={handlePay}>
+
+        <div className="form-group" style={{ alignItems: "flex-start" }}>
+          <label htmlFor="address">Address</label>
           <textarea
+            id="address"
             rows={3}
-            placeholder="Shipping address (Hong Kong)"
+            placeholder="Hong Kong shipping address"
             value={address}
             onChange={(event) => setAddress(event.target.value)}
           />
-          <button className="btn btn-primary" type="submit">
-            Pay now (test)
-          </button>
-          {message ? <p className="ok">{message}</p> : null}
-        </form>
-      </div>
-    </section>
+        </div>
+
+        <div className="login-reset">
+          <input type="submit" value="Pay now" />
+        </div>
+      </form>
+    </>
   );
 }

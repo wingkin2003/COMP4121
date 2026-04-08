@@ -112,7 +112,7 @@ export default function LoginPage() {
         className={`login-container ${shakeForm ? "shake" : ""}`}
         onSubmit={handleSubmit}
       >
-        <h1>Welcome to log in</h1>
+        <h1 style={{ marginBottom: "1.5rem" }}>Welcome to log in</h1>
 
         <div className="form-group">
           <label htmlFor="username">Account</label>
