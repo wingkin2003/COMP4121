@@ -27,6 +27,7 @@ export default function MarketplacePage() {
 
   const filtered = useMemo(() => {
     return [...products]
+      .filter((product) => !product.status || product.status === "selling")
       .filter((product) =>
         product.title.toLowerCase().includes(query.trim().toLowerCase()),
       )

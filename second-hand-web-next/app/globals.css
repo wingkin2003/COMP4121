@@ -384,13 +384,30 @@ body:has(.page-shell) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.product-img-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
 .product-thumb {
+  width: 100%;
+  height: 100%;
   background: #e8efe6;
   color: #5a7a55;
-  padding: 2rem 1rem;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.85rem;
   font-weight: 500;
+}
+
+.product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .product-info {
@@ -497,6 +514,37 @@ body:has(.page-shell) {
 
 .sell-form textarea {
   resize: vertical;
+}
+
+/* image upload preview */
+.img-preview-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.img-preview {
+  width: 160px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid #e0e0e0;
+}
+
+.img-remove {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+  background: #fff;
+  font-size: 0.8rem;
+  color: #555;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.img-remove:hover {
+  border-color: #c44;
+  color: #c44;
 }
 
 .sell-row {
@@ -618,24 +666,43 @@ body:has(.page-shell) {
   border: 1px solid #e0e0e0;
   border-radius: 0.75rem;
   overflow: hidden;
+  display: flex;
+}
+
+.detail-left {
+  flex: 0 0 320px;
+  background: #f5f5f5;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
 }
 
 .detail-thumb {
   background: #e8efe6;
   color: #5a7a55;
-  padding: 3rem 1rem;
-  text-align: center;
-  font-size: 1rem;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
-.detail-body {
-  padding: 1.5rem;
+.detail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-.detail-body h1 {
+.detail-right {
+  flex: 1;
+  padding: 2rem;
+}
+
+.detail-right h1 {
   font-size: 1.4rem;
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.4rem;
   color: #333;
 }
 
@@ -646,15 +713,23 @@ body:has(.page-shell) {
   margin: 0.8rem 0;
 }
 
-.detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  font-size: 0.8rem;
-  color: #888;
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-bottom: 1.2rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.detail-table td {
+  padding: 0.45rem 0.8rem 0.45rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.detail-label {
+  color: #999;
+  width: 80px;
+  font-size: 0.82rem;
 }
 
 .detail-actions {
@@ -691,6 +766,262 @@ body:has(.page-shell) {
   margin-bottom: 1rem;
 }
 
+/* ---- like button ---- */
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 1rem;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #888;
+  transition: all 0.15s;
+}
+
+.like-btn:hover {
+  border-color: #e57373;
+  color: #e57373;
+}
+
+.like-btn.liked {
+  color: #e53935;
+  border-color: #e53935;
+}
+
+.like-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.like-count {
+  font-size: 0.8rem;
+}
+
+/* ---- profile ---- */
+.profile-card {
+  max-width: 560px;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #4caf50;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-header-text h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.profile-header-text .muted {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+}
+
+.profile-edit-btn {
+  flex-shrink: 0;
+}
+
+.profile-edit-section {
+  border-top: 1px solid #eee;
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.profile-field {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 70px;
+  font-size: 0.85rem;
+}
+
+.profile-value-readonly {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.profile-edit-section input {
+  flex: 1;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.profile-edit-section input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.profile-btn-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.profile-card .detail-msg {
+  padding: 0 1.5rem 1rem;
+}
+
+/* ---- listing table ---- */
+.listing-table-wrap {
+  overflow-x: auto;
+}
+
+.listing-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.listing-table th,
+.listing-table td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.listing-table th {
+  background: #f8f8f8;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.listing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.listing-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.listing-title {
+  color: #4caf50;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.listing-title:hover {
+  text-decoration: underline;
+}
+
+.like-count-cell {
+  color: #e53935;
+  font-size: 0.85rem;
+}
+
+/* ---- status badges ---- */
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-selling {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.status-sold {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-expired {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-unpublished {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.listing-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-select {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-danger-sm {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  border: 1px solid #e57373;
+  background: none;
+  color: #e53935;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-danger-sm:hover {
+  background: #e53935;
+  color: #fff;
+}
+
 /* ---- responsive ---- */
 @media (max-width: 640px) {
   .nav-row {
@@ -716,6 +1047,16 @@ body:has(.page-shell) {
     grid-template-columns: 1fr;
   }
 
+  .listing-table th:nth-child(5),
+  .listing-table td:nth-child(5) {
+    display: none;
+  }
+
+  .listing-actions {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
   .sell-row {
     flex-direction: column;
     gap: 1rem;
@@ -736,6 +1077,19 @@ body:has(.page-shell) {
     gap: 0.8rem;
     align-items: stretch;
     text-align: center;
+  }
+
+  .detail-card {
+    flex-direction: column;
+  }
+
+  .detail-left {
+    flex: none;
+    aspect-ratio: 4 / 3;
+  }
+
+  .detail-right {
+    padding: 1.2rem;
   }
 }
 

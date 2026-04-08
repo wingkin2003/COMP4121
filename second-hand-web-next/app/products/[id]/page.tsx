@@ -2,19 +2,32 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { addToCart, getProducts } from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
+import { Product } from "@/lib/mvp-types";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [message, setMessage] = useState<string | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  const product = useMemo(
-    () => getProducts().find((entry) => entry.id === id),
-    [id],
-  );
+  useEffect(() => {
+    const found = getProducts().find((entry) => entry.id === id) ?? null;
+    setProduct(found);
+    setLoaded(true);
+  }, [id]);
+
+  if (!loaded) {
+    return (
+      <div className="page-shell">
+        <AppNav />
+        <main className="page-content" />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -43,17 +56,27 @@ export default function ProductDetailPage() {
       <main className="page-content">
         <Link href="/marketplace" className="back-link">← Back to marketplace</Link>
         <div className="detail-card">
-          <div className="detail-thumb">{product.category}</div>
-          <div className="detail-body">
+          <div className="detail-left">
+            {product.image ? (
+              <img src={product.image} alt={product.title} className="detail-img" />
+            ) : (
+              <div className="detail-thumb">{product.category}</div>
+            )}
+          </div>
+          <div className="detail-right">
             <h1>{product.title}</h1>
             <p className="price">{formatHKD(product.price)}</p>
-            <p className="detail-desc">{product.description}</p>
-            <div className="detail-meta">
-              <span>{product.condition}</span>
-              <span>{product.location}</span>
-              <span>Listed {formatHKDate(product.createdAt)}</span>
-              <span>Seller: {product.sellerName}</span>
-            </div>
+            {product.description && (
+              <p className="detail-desc">{product.description}</p>
+            )}
+            <table className="detail-table">
+              <tbody>
+                <tr><td className="detail-label">Condition</td><td>{product.condition}</td></tr>
+                <tr><td className="detail-label">Location</td><td>{product.location || "—"}</td></tr>
+                <tr><td className="detail-label">Listed</td><td>{formatHKDate(product.createdAt)}</td></tr>
+                <tr><td className="detail-label">Seller</td><td>{product.sellerName || "—"}</td></tr>
+              </tbody>
+            </table>
             <div className="detail-actions">
               <button className="btn btn-fill" onClick={handleAdd}>
                 Add to cart

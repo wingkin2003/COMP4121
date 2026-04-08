@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addProduct } from "@/lib/mvp-data";
+import { addProduct, getCurrentAccount } from "@/lib/mvp-data";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -16,15 +16,32 @@ export default function SellPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState<ProductCategory>("Electronics");
   const [condition, setCondition] = useState<ProductCondition>("Good");
-  const [location, setLocation] = useState("Central");
-  const [sellerName, setSellerName] = useState("New Seller");
+  const [location, setLocation] = useState("");
+  const [sellerName, setSellerName] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const numericPrice = Number(price);
-    if (!title || !description || Number.isNaN(numericPrice) || numericPrice <= 0) {
-      setResult("Please complete all fields with a valid price.");
+    if (!title || Number.isNaN(numericPrice) || numericPrice <= 0) {
+      setResult("Please provide a title and valid price.");
       return;
     }
 
@@ -35,16 +52,24 @@ export default function SellPage() {
       price: numericPrice,
       category,
       condition,
-      image: "/file.svg",
+      image: imagePreview || "",
       location,
       sellerName,
+      sellerAccount: getCurrentAccount(),
+      status: "selling",
+      likes: 0,
       createdAt: new Date().toISOString(),
     });
 
     setTitle("");
     setDescription("");
     setPrice("");
-    setResult("Listing created successfully.");
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+    setResult("Listing created! Redirecting...");
+    setTimeout(() => {
+      window.location.href = "/marketplace";
+    }, 1500);
   };
 
   return (
@@ -76,6 +101,21 @@ export default function SellPage() {
                 rows={4}
               />
             </label>
+            <label>
+              Product photo
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            </label>
+            {imagePreview && (
+              <div className="img-preview-wrap">
+                <img src={imagePreview} alt="Preview" className="img-preview" />
+                <button type="button" className="img-remove" onClick={removeImage}>Remove</button>
+              </div>
+            )}
             <label>
               Price (HKD)
               <input

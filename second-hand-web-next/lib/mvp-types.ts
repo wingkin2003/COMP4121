@@ -28,6 +28,15 @@ export const PRODUCT_CONDITIONS: ProductCondition[] = [
   "Poor",
 ];
 
+export type ProductStatus = "selling" | "sold" | "expired" | "unpublished";
+
+export const PRODUCT_STATUSES: ProductStatus[] = [
+  "selling",
+  "sold",
+  "expired",
+  "unpublished",
+];
+
 export type Product = {
   id: string;
   title: string;
@@ -38,6 +47,9 @@ export type Product = {
   image: string;
   location: string;
   sellerName: string;
+  sellerAccount: string;
+  status: ProductStatus;
+  likes: number;
   createdAt: string;
 };
 

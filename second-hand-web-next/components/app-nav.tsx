@@ -8,6 +8,7 @@ const links = [
   { href: "/sell", label: "Sell" },
   { href: "/cart", label: "Cart" },
   { href: "/checkout", label: "Checkout" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export function AppNav() {
