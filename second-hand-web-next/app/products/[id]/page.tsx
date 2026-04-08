@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { AppNav } from "@/components/app-nav";
 import { addToCart, getProducts } from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
 
@@ -17,14 +18,17 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <section className="stack">
-        <div className="card">
-          <h1>Product not found</h1>
-          <Link href="/marketplace" className="btn btn-secondary">
-            Back to marketplace
-          </Link>
-        </div>
-      </section>
+      <div className="page-shell">
+        <AppNav />
+        <main className="page-content">
+          <div className="detail-empty">
+            <h1>Product not found</h1>
+            <Link href="/marketplace" className="btn">
+              Back to marketplace
+            </Link>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -34,30 +38,35 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <section className="stack">
-      <div className="card product-detail">
-        <div className="detail-thumb">{product.category}</div>
-        <div className="detail-content">
-          <h1>{product.title}</h1>
-          <p className="price">{formatHKD(product.price)}</p>
-          <p>{product.description}</p>
-          <p className="muted">
-            {product.condition} · {product.location}
-          </p>
-          <p className="muted">Listed {formatHKDate(product.createdAt)}</p>
-          <p className="muted">Seller: {product.sellerName}</p>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={handleAdd}>
-              Add to cart
-            </button>
-            <Link href="/cart" className="btn btn-secondary">
-              Go to cart
-            </Link>
+    <div className="page-shell">
+      <AppNav />
+      <main className="page-content">
+        <Link href="/marketplace" className="back-link">← Back to marketplace</Link>
+        <div className="detail-card">
+          <div className="detail-thumb">{product.category}</div>
+          <div className="detail-body">
+            <h1>{product.title}</h1>
+            <p className="price">{formatHKD(product.price)}</p>
+            <p className="detail-desc">{product.description}</p>
+            <div className="detail-meta">
+              <span>{product.condition}</span>
+              <span>{product.location}</span>
+              <span>Listed {formatHKDate(product.createdAt)}</span>
+              <span>Seller: {product.sellerName}</span>
+            </div>
+            <div className="detail-actions">
+              <button className="btn btn-fill" onClick={handleAdd}>
+                Add to cart
+              </button>
+              <Link href="/cart" className="btn">
+                Go to cart
+              </Link>
+            </div>
+            {message && <p className="detail-msg">{message}</p>}
           </div>
-          {message ? <p className="ok">{message}</p> : null}
         </div>
-      </div>
-    </section>
+      </main>
+    </div>
   );
 }
 

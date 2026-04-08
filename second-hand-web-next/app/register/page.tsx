@@ -22,8 +22,12 @@ export default function RegisterPage() {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (username.length !== 7) {
-      showTimedMessage("Account must be 7 characters", "error");
+    if (!username || !email || !password || !confirmPassword) {
+      showTimedMessage("Please fill in all fields", "error");
+      return;
+    }
+    if (username.length < 6 || username.length > 40) {
+      showTimedMessage("Account must be 6-40 characters", "error");
       return;
     }
     if (password.length < 6) {
@@ -37,15 +41,20 @@ export default function RegisterPage() {
 
     const users = JSON.parse(localStorage.getItem("users") || "[]");
     if (users.some((u: { username: string }) => u.username === username)) {
-      showTimedMessage("Account already exists", "error");
+      showTimedMessage("This student ID is already registered", "error");
       return;
     }
 
     users.push({ username, email, password });
     localStorage.setItem("users", JSON.stringify(users));
-    showTimedMessage("Register success! Redirecting...", "success");
+
+    // auto-login after register
+    localStorage.setItem("currentUser", JSON.stringify({ username, email, password }));
+    localStorage.setItem("isLoggedIn", "true");
+
+    showTimedMessage("Account created! Redirecting...", "success");
     setTimeout(() => {
-      window.location.href = "/";
+      window.location.href = "/marketplace";
     }, 1500);
   };
 
@@ -64,18 +73,19 @@ export default function RegisterPage() {
       )}
 
       <form className="login-container" onSubmit={handleSubmit}>
-        <h1 style={{ marginBottom: "1.5rem" }}>Create Account</h1>
+        <h1 style={{ marginBottom: "1.5rem", fontSize: "18px" }}>Create Account</h1>
 
         <div className="form-group">
           <label htmlFor="reg-username">Account</label>
           <input
             type="text"
             id="reg-username"
+            placeholder="6-40 characters"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            minLength={7}
-            maxLength={7}
+            minLength={6}
+            maxLength={40}
           />
         </div>
 
@@ -84,6 +94,7 @@ export default function RegisterPage() {
           <input
             type="email"
             id="reg-email"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -96,6 +107,7 @@ export default function RegisterPage() {
             <input
               type={showPassword ? "text" : "password"}
               id="reg-password"
+              placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -116,6 +128,7 @@ export default function RegisterPage() {
             <input
               type={showPassword ? "text" : "password"}
               id="reg-confirm"
+              placeholder="Re-enter password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -124,7 +137,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="register-link">
-          <Link href="/">Already have account?</Link>
+          <Link href="/">Already have an account?</Link>
         </div>
 
         <div className="login-reset">

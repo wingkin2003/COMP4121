@@ -53,8 +53,8 @@ export default function LoginPage() {
       return false;
     }
 
-    if (username.length !== 7) {
-      showTimedMessage("Account must be 7 characters", "error");
+    if (username.length < 6 || username.length > 40) {
+      showTimedMessage("Account must be 6-40 characters", "error");
       return false;
     }
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
       localStorage.setItem("isLoggedIn", "true");
       showTimedMessage("Login success...", "success");
       setTimeout(() => {
-        window.location.href = "supermarket.html";
+        window.location.href = "/marketplace";
       }, 2000);
       return;
     }
@@ -112,7 +112,7 @@ export default function LoginPage() {
         className={`login-container ${shakeForm ? "shake" : ""}`}
         onSubmit={handleSubmit}
       >
-        <h1 style={{ marginBottom: "1.5rem" }}>Welcome to log in</h1>
+        <h1 style={{ marginBottom: "1.5rem", fontSize: "18px", }}>Login</h1>
 
         <div className="form-group">
           <label htmlFor="username">Account</label>
@@ -120,11 +120,12 @@ export default function LoginPage() {
             type="text"
             id="username"
             name="username"
+            placeholder="6-40 characters"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             required
-            minLength={7}
-            maxLength={7}
+            minLength={6}
+            maxLength={40}
           />
         </div>
 
@@ -157,7 +158,7 @@ export default function LoginPage() {
           <input type="submit" value="Login" />
           <input type="reset" value="Reset" onClick={handleReset} />
         </div>
-      </form>
+      </form >
     </>
   );
 }

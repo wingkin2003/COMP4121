@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { AppNav } from "@/components/app-nav";
 import { addOrder, getCart, getProducts, setCart } from "@/lib/mvp-data";
 import { formatHKD } from "@/lib/format";
 
@@ -57,52 +59,56 @@ export default function CheckoutPage() {
     setCart([]);
     setAddress("");
     setVersion((value) => value + 1);
-    setMessage("Payment completed in test mode. Order confirmed.");
+    setMessage("Payment completed. Order confirmed.");
   };
 
   return (
-    <>
-      {message && (
-        <div className="login-message success">{message}</div>
-      )}
+    <div className="page-shell">
+      <AppNav />
+      <main className="page-content">
+        <Link href="/cart" className="back-link">← Back to cart</Link>
 
-      <form className="login-container checkout-container" onSubmit={handlePay}>
-        <h1>Checkout</h1>
-
-        <div className="checkout-summary">
-          <div className="checkout-row">
-            <span>Items total</span>
-            <span>{formatHKD(subtotal)}</span>
-          </div>
-          <div className="checkout-row">
-            <span>Platform commission (4%)</span>
-            <span>{formatHKD(commission)}</span>
-          </div>
-          <div className="checkout-row">
-            <span>Seller payout</span>
-            <span>{formatHKD(sellerPayout)}</span>
-          </div>
-          <div className="checkout-row checkout-total">
-            <span>Amount charged</span>
-            <span>{formatHKD(subtotal)}</span>
-          </div>
+        <div className="section-header">
+          <h1>Checkout</h1>
         </div>
 
-        <div className="form-group" style={{ alignItems: "flex-start" }}>
-          <label htmlFor="address">Address</label>
-          <textarea
-            id="address"
-            rows={3}
-            placeholder="Hong Kong shipping address"
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
-          />
-        </div>
+        <div className="content-card">
+          <div className="checkout-summary">
+            <div className="checkout-row">
+              <span>Items total</span>
+              <span>{formatHKD(subtotal)}</span>
+            </div>
+            <div className="checkout-row">
+              <span>Platform commission (4%)</span>
+              <span>{formatHKD(commission)}</span>
+            </div>
+            <div className="checkout-row">
+              <span>Seller payout</span>
+              <span>{formatHKD(sellerPayout)}</span>
+            </div>
+            <div className="checkout-row checkout-total">
+              <span>Amount charged</span>
+              <span>{formatHKD(subtotal)}</span>
+            </div>
+          </div>
 
-        <div className="login-reset">
-          <input type="submit" value="Pay now" />
+          <form className="sell-form" onSubmit={handlePay}>
+            <label>
+              Shipping address
+              <textarea
+                rows={3}
+                placeholder="Hong Kong shipping address"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+              />
+            </label>
+            <button className="btn btn-fill" type="submit">
+              Pay now
+            </button>
+            {message && <p className="detail-msg">{message}</p>}
+          </form>
         </div>
-      </form>
-    </>
+      </main>
+    </div>
   );
 }

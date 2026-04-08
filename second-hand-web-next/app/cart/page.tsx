@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AppNav } from "@/components/app-nav";
 import { getCart, getProducts, setCart } from "@/lib/mvp-data";
 import { formatHKD } from "@/lib/format";
 
@@ -34,47 +35,52 @@ export default function CartPage() {
   };
 
   return (
-    <section className="stack">
-      <div className="card">
-        <h1>Your cart</h1>
+    <div className="page-shell">
+      <AppNav />
+      <main className="page-content">
+        <div className="section-header">
+          <h1>Your cart</h1>
+        </div>
+
         {rows.length === 0 ? (
-          <p>
-            Cart is empty. <Link href="/marketplace">Browse marketplace</Link>
-          </p>
+          <div className="content-card" style={{ textAlign: "center", padding: "3rem 1rem" }}>
+            <p>Cart is empty.</p>
+            <Link href="/marketplace" className="btn" style={{ marginTop: "1rem" }}>
+              Browse marketplace
+            </Link>
+          </div>
         ) : (
           <>
-            <div className="table">
-              {rows.map((row) => (
-                <div key={row.product.id} className="table-row">
-                  <div>
-                    <strong>{row.product.title}</strong>
-                    <p className="muted">{formatHKD(row.product.price)} each</p>
+            <div className="content-card">
+              <div className="cart-list">
+                {rows.map((row) => (
+                  <div key={row.product.id} className="cart-item">
+                    <div className="cart-item-info">
+                      <strong>{row.product.title}</strong>
+                      <span className="muted">{formatHKD(row.product.price)} each</span>
+                    </div>
+                    <div className="cart-qty">
+                      <button className="qty-btn" onClick={() => updateQty(row.product.id, row.quantity - 1)}>−</button>
+                      <span className="qty-num">{row.quantity}</span>
+                      <button className="qty-btn" onClick={() => updateQty(row.product.id, row.quantity + 1)}>+</button>
+                    </div>
+                    <div className="cart-item-total">
+                      {formatHKD(row.product.price * row.quantity)}
+                    </div>
                   </div>
-                  <div className="qty">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => updateQty(row.product.id, row.quantity - 1)}
-                    >
-                      -
-                    </button>
-                    <span>{row.quantity}</span>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => updateQty(row.product.id, row.quantity + 1)}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-            <p className="price">Subtotal: {formatHKD(subtotal)}</p>
-            <Link href="/checkout" className="btn btn-primary">
-              Proceed to checkout
-            </Link>
+
+            <div className="cart-footer">
+              <span className="price">Subtotal: {formatHKD(subtotal)}</span>
+              <Link href="/checkout" className="btn btn-fill">
+                Proceed to checkout
+              </Link>
+            </div>
           </>
         )}
-      </div>
-    </section>
+      </main>
+    </div>
   );
 }

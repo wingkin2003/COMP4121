@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/sell", label: "Sell" },
   { href: "/cart", label: "Cart" },
@@ -14,10 +13,16 @@ const links = [
 export function AppNav() {
   const pathname = usePathname();
 
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("isLoggedIn");
+    window.location.href = "/";
+  };
+
   return (
     <header className="site-header">
       <div className="site-shell nav-row">
-        <Link href="/" className="brand">
+        <Link href="/marketplace" className="brand">
           SecondLife HK
         </Link>
         <nav className="site-nav">
@@ -30,6 +35,9 @@ export function AppNav() {
               {link.label}
             </Link>
           ))}
+          <button className="nav-logout" onClick={handleLogout}>
+            Logout
+          </button>
         </nav>
       </div>
     </header>
