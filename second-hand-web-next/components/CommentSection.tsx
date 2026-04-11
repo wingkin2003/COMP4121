@@ -23,7 +23,7 @@ type Comment = {
   replies: Reply[];
 };
 
-// ========== Mock Current User ==========
+// ========== Current User (replace with real auth data) ==========
 const CURRENT_USER = {
   id: "me",
   name: "You",
@@ -33,150 +33,14 @@ const CURRENT_USER = {
 // ========== Helper ==========
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
-// ========== Comment Data per Product (by productId) ==========
-
-const getCommentsByProductId = (productId: string): Comment[] => {
-  // 👇 EDIT THESE KEYS to match your actual product IDs
-  const productMap: Record<string, Comment[]> = {
-    // ---- Product 1: Air Fryer 4L (expected ID: p1) ----
-    p4: [
-      {
-        id: "c1_1",
-        userId: "buyer1",
-        userName: "Tom Wong",
-        userInitial: "T",
-        content: "Does it come with the original box?",
-        createdAt: new Date(2026, 3, 9, 14, 20),
-        replies: [
-          {
-            id: "r1_1",
-            userId: "seller",
-            userName: "Clara Ho (Seller)",
-            userInitial: "C",
-            content: "Yes, original box and manual included.",
-            createdAt: new Date(2026, 3, 9, 15, 10),
-          },
-        ],
-      },
-      {
-        id: "c1_2",
-        userId: "buyer2",
-        userName: "Mandy Liu",
-        userInitial: "M",
-        content: "How old is this air fryer?",
-        createdAt: new Date(2026, 3, 8, 9, 45),
-        replies: [],
-      },
-    ],
-    // ---- Product 2: Adidas Running Shoes US9 (expected ID: p2) ----
-    p3: [
-      {
-        id: "c2_1",
-        userId: "runner1",
-        userName: "Chris Chan",
-        userInitial: "C",
-        content: "Are these suitable for wide feet?",
-        createdAt: new Date(2026, 3, 10, 11, 30),
-        replies: [
-          {
-            id: "r2_1",
-            userId: "seller",
-            userName: "Jason Lee (Seller)",
-            userInitial: "J",
-            content: "Yes, they fit true to size. I have normal feet though.",
-            createdAt: new Date(2026, 3, 10, 12, 15),
-          },
-        ],
-      },
-      {
-        id: "c2_2",
-        userId: "runner2",
-        userName: "Suki Cheung",
-        userInitial: "S",
-        content: "Any wear on the sole?",
-        createdAt: new Date(2026, 3, 9, 20, 0),
-        replies: [],
-      },
-    ],
-    // ---- Product 3: Solid Oak Study Desk (expected ID: p3) ----
-    p2: [
-      {
-        id: "c3_1",
-        userId: "buyer3",
-        userName: "Kevin Ho",
-        userInitial: "K",
-        content: "Can it be disassembled for moving?",
-        createdAt: new Date(2026, 3, 11, 9, 0),
-        replies: [
-          {
-            id: "r3_1",
-            userId: "seller",
-            userName: "May Chan (Seller)",
-            userInitial: "M",
-            content: "Yes, the legs can be unscrewed easily.",
-            createdAt: new Date(2026, 3, 11, 10, 30),
-          },
-        ],
-      },
-      {
-        id: "c3_2",
-        userId: "buyer4",
-        userName: "Peggy Tsang",
-        userInitial: "P",
-        content: "What are the exact dimensions?",
-        createdAt: new Date(2026, 3, 10, 16, 20),
-        replies: [],
-      },
-    ],
-    // ---- Product 4: iPhone 13 128GB (expected ID: p4) ----
-    p1: [
-      {
-        id: "c4_1",
-        userId: "tech1",
-        userName: "Derek Yip",
-        userInitial: "D",
-        content: "Battery health 88% – is that accurate?",
-        createdAt: new Date(2026, 3, 11, 14, 0),
-        replies: [
-          {
-            id: "r4_1",
-            userId: "seller",
-            userName: "Ken Wong (Seller)",
-            userInitial: "K",
-            content: "Yes, it's verified from settings. No scratches on screen.",
-            createdAt: new Date(2026, 3, 11, 15, 45),
-          },
-        ],
-      },
-      {
-        id: "c4_2",
-        userId: "tech2",
-        userName: "Winnie Lam",
-        userInitial: "W",
-        content: "Does it come with the original charger?",
-        createdAt: new Date(2026, 3, 10, 12, 30),
-        replies: [],
-      },
-    ],
-  };
-
-  // If no match, return an empty array and log a warning
-  if (!productMap[productId]) {
-    console.warn(`No comments found for productId: "${productId}". Available keys:`, Object.keys(productMap));
-    return [];
-  }
-  return productMap[productId];
-};
-
-// ========== Component ==========
+// ========== Component Props ==========
 interface CommentSectionProps {
-  productId: string;
+  productId: string; // Reserved for future backend integration
 }
 
 export function CommentSection({ productId }: CommentSectionProps) {
-  console.log("Rendering comments for productId:", productId);
-
-  const [comments, setComments] = useState<Comment[]>(() => getCommentsByProductId(productId));
+  // No mock data – start with empty comments array
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newCommentText, setNewCommentText] = useState("");
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
@@ -217,8 +81,11 @@ export function CommentSection({ productId }: CommentSectionProps) {
       createdAt: new Date(),
     };
     setComments((prev) =>
-      prev.map((c) => (c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c))
+      prev.map((c) =>
+        c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c
+      )
     );
+    // Clear reply draft and close reply box
     setReplyDrafts((prev) => {
       const newDrafts = { ...prev };
       delete newDrafts[commentId];
@@ -249,7 +116,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-semibold mb-4">💬 Comments & Questions</h3>
+      {/* No title – removed as requested */}
 
       {/* New comment form */}
       <div className="flex gap-3 mb-6">
@@ -301,6 +168,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
                   {openReplyId === comment.id ? "Cancel" : "Reply"}
                 </button>
 
+                {/* Reply input box */}
                 {openReplyId === comment.id && (
                   <div className="mt-3 ml-2 flex gap-2">
                     <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium text-xs">
@@ -325,6 +193,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
                   </div>
                 )}
 
+                {/* Existing replies */}
                 {comment.replies.length > 0 && (
                   <div className="mt-3 ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
                     {comment.replies.map((reply) => (
