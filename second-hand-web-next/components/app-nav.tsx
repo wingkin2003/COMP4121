@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/marketplace/sell", label: "Marketplace" },
-  { href: "/buy", label: "Buy" },
-  { href: "/sell", label: "Sell" },
+  { href: "/order/sell", label: "Order" },
   { href: "/cart", label: "Cart" },
   { href: "/checkout", label: "Checkout" },
   { href: "/profile", label: "Profile" },
@@ -14,6 +13,16 @@ const links = [
 
 export function AppNav() {
   const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === "/marketplace/sell") {
+      return pathname.startsWith("/marketplace");
+    }
+    if (href === "/order/sell") {
+      return pathname.startsWith("/order") || pathname === "/buy" || pathname === "/sell";
+    }
+    return pathname === href;
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -32,7 +41,7 @@ export function AppNav() {
             <Link
               key={link.href}
               href={link.href}
-              className={pathname === link.href ? "active" : ""}
+              className={isActive(link.href) ? "active" : ""}
             >
               {link.label}
             </Link>

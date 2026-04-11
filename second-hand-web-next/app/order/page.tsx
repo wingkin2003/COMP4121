@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function SellPage() {
+export default function OrderPageRoot() {
   redirect("/order/sell");
 }
-

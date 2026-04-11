@@ -355,6 +355,38 @@ body:has(.page-shell) {
   color: #fff;
 }
 
+.order-tabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.25rem;
+  background: #edf2ea;
+  border: 1px solid #dde4d7;
+  border-radius: 999px;
+}
+
+.order-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  color: #556153;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: 0.15s;
+}
+
+.order-tab:hover {
+  color: #2f3e2c;
+}
+
+.order-tab.active {
+  background: #7f9a7a;
+  color: #fff;
+}
+
 .marketplace-header h1 {
   font-size: 1.5rem;
   color: #2f3e2c;

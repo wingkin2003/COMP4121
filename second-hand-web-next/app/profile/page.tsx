@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/app-nav";
 import {
-    deleteBuyOrder,
     getBuyOrdersByAccount,
     getProductsByAccount,
     updateBuyOrder,
@@ -23,6 +22,10 @@ import {
 } from "@/lib/mvp-types";
 import { formatHKD, formatHKDate } from "@/lib/format";
 
+type BuyOrderStatus = BuyOrder["status"];
+
+const BUY_ORDER_STATUSES: BuyOrderStatus[] = ["open", "matched", "closed"];
+
 export default function ProfilePage() {
     const [account, setAccount] = useState("");
     const [email, setEmail] = useState("");
@@ -40,7 +43,10 @@ export default function ProfilePage() {
     const [buyCondition, setBuyCondition] = useState<ProductCondition>("Good");
     const [buyLocation, setBuyLocation] = useState("");
     const [buyName, setBuyName] = useState("");
+    const [buyStatus, setBuyStatus] = useState<BuyOrderStatus>("open");
+    const [buyImagePreview, setBuyImagePreview] = useState<string | null>(null);
     const [buyMsg, setBuyMsg] = useState<string | null>(null);
+    const buyFileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -92,12 +98,36 @@ export default function ProfilePage() {
         setBuyCondition(order.condition);
         setBuyLocation(order.location);
         setBuyName(order.buyerName);
+        setBuyStatus(order.status);
+        setBuyImagePreview(order.image || null);
+        if (buyFileRef.current) buyFileRef.current.value = "";
         setBuyMsg(null);
     };
 
     const cancelBuyEdit = () => {
         setEditingBuyId(null);
+        if (buyFileRef.current) buyFileRef.current.value = "";
         setBuyMsg(null);
+    };
+
+    const handleBuyStatusChange = (id: string, status: BuyOrderStatus) => {
+        updateBuyOrder(id, { status });
+        refreshBuyOrders();
+    };
+
+    const handleBuyImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            setBuyImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const removeBuyImage = () => {
+        setBuyImagePreview(null);
+        if (buyFileRef.current) buyFileRef.current.value = "";
     };
 
     const saveBuyOrder = () => {
@@ -117,6 +147,8 @@ export default function ProfilePage() {
             condition: buyCondition,
             location: buyLocation.trim(),
             buyerName: buyName.trim(),
+            status: buyStatus,
+            image: buyImagePreview || "",
         });
         refreshBuyOrders();
         setEditingBuyId(null);
@@ -124,13 +156,39 @@ export default function ProfilePage() {
         setTimeout(() => setBuyMsg(null), 2000);
     };
 
-    const removeBuyOrder = (id: string) => {
-        deleteBuyOrder(id);
+    const buyStatusLabel = (status: BuyOrderStatus) => {
+        switch (status) {
+            case "open":
+                return "Open";
+            case "matched":
+                return "Matched";
+            case "closed":
+                return "Closed";
+            default:
+                return status;
+        }
+    };
+
+    const buyStatusClass = (status: BuyOrderStatus) => {
+        switch (status) {
+            case "open":
+                return "status-selling";
+            case "matched":
+                return "status-sold";
+            case "closed":
+                return "status-unpublished";
+            default:
+                return "";
+        }
+    };
+
+    const handleBuyUnpublish = (id: string) => {
+        updateBuyOrder(id, { status: "closed" });
         refreshBuyOrders();
         if (editingBuyId === id) {
-            cancelBuyEdit();
+            setBuyStatus("closed");
         }
-        setBuyMsg("Buy request deleted.");
+        setBuyMsg("Buy request unpublished.");
         setTimeout(() => setBuyMsg(null), 2000);
     };
 
@@ -361,6 +419,7 @@ export default function ProfilePage() {
                                     <th>Budget</th>
                                     <th>Category</th>
                                     <th>Condition</th>
+                                    <th>Status</th>
                                     <th>Created</th>
                                     <th>Actions</th>
                                 </tr>
@@ -377,18 +436,38 @@ export default function ProfilePage() {
                                         <td>{formatHKD(order.budget)}</td>
                                         <td>{order.category}</td>
                                         <td>{order.condition}</td>
+                                        <td>
+                                            <span className={`status-badge ${buyStatusClass(order.status)}`}>
+                                                {buyStatusLabel(order.status)}
+                                            </span>
+                                        </td>
                                         <td className="muted">{formatHKDate(order.createdAt)}</td>
                                         <td>
                                             <div className="listing-actions">
+                                                <select
+                                                    value={order.status}
+                                                    onChange={(event) =>
+                                                        handleBuyStatusChange(order.id, event.target.value as BuyOrderStatus)
+                                                    }
+                                                    className="status-select"
+                                                >
+                                                    {BUY_ORDER_STATUSES.map((status) => (
+                                                        <option key={status} value={status}>
+                                                            {buyStatusLabel(status)}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                                 <button className="btn" onClick={() => startBuyEdit(order)}>
                                                     Edit
                                                 </button>
-                                                <button
-                                                    className="btn btn-danger-sm"
-                                                    onClick={() => removeBuyOrder(order.id)}
-                                                >
-                                                    Delete
-                                                </button>
+                                                {order.status !== "closed" && (
+                                                    <button
+                                                        className="btn btn-danger-sm"
+                                                        onClick={() => handleBuyUnpublish(order.id)}
+                                                    >
+                                                        Unpublish
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -473,6 +552,36 @@ export default function ProfilePage() {
                                     onChange={(e) => setBuyName(e.target.value)}
                                 />
                             </label>
+                            <label>
+                                Status
+                                <select
+                                    value={buyStatus}
+                                    onChange={(e) => setBuyStatus(e.target.value as BuyOrderStatus)}
+                                >
+                                    {BUY_ORDER_STATUSES.map((status) => (
+                                        <option key={status} value={status}>
+                                            {buyStatusLabel(status)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label>
+                                Reference image (optional)
+                                <input
+                                    ref={buyFileRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleBuyImageChange}
+                                />
+                            </label>
+                            {buyImagePreview && (
+                                <div className="img-preview-wrap">
+                                    <img src={buyImagePreview} alt="Preview" className="img-preview" />
+                                    <button type="button" className="img-remove" onClick={removeBuyImage}>
+                                        Remove
+                                    </button>
+                                </div>
+                            )}
                             <div className="profile-btn-row">
                                 <button className="btn btn-fill" onClick={saveBuyOrder}>
                                     Save changes
