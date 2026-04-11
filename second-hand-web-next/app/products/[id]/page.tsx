@@ -7,6 +7,7 @@ import { AppNav } from "@/components/app-nav";
 import { addToCart, getProducts } from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { Product } from "@/lib/mvp-types";
+import { CommentSection } from "@/components/CommentSection";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,6 +89,7 @@ export default function ProductDetailPage() {
             {message && <p className="detail-msg">{message}</p>}
           </div>
         </div>
+        <CommentSection productId={product.id} />
       </main>
     </div>
   );
