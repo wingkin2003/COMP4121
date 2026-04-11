@@ -323,6 +323,38 @@ body:has(.page-shell) {
   margin-bottom: 1.5rem;
 }
 
+.marketplace-tabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.25rem;
+  background: #edf2ea;
+  border: 1px solid #dde4d7;
+  border-radius: 999px;
+}
+
+.marketplace-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  color: #556153;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: 0.15s;
+}
+
+.marketplace-tab:hover {
+  color: #2f3e2c;
+}
+
+.marketplace-tab.active {
+  background: #7f9a7a;
+  color: #fff;
+}
+
 .marketplace-header h1 {
   font-size: 1.5rem;
   color: #2f3e2c;
@@ -368,6 +400,12 @@ body:has(.page-shell) {
 .grid-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.request-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
 
@@ -772,6 +810,78 @@ body:has(.page-shell) {
   align-items: center;
   gap: 0.6rem;
   margin-top: 0.2rem;
+}
+
+.request-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.request-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.request-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.request-budget {
+  font-weight: 700;
+  color: #2f3e2c;
+  white-space: nowrap;
+}
+
+.request-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid #e6e6e6;
+}
+
+.request-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #e8efe6;
+  color: #5a7a55;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.request-no-image {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #999;
+}
+
+.request-desc {
+  margin: 0;
+  color: #444;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.request-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  color: #777;
 }
 
 .like-btn {

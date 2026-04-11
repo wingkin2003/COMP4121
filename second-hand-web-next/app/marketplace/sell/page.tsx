@@ -2,7 +2,6 @@
 
 import { MarketplaceBrowser } from "@/components/marketplace-browser";
 
-export default function MarketplacePage() {
+export default function MarketplaceSellPage() {
   return <MarketplaceBrowser mode="sell" />;
 }
-

@@ -1,6 +1,7 @@
-import { CartItem, Order, Product, ProductStatus } from "@/lib/mvp-types";
+import { BuyOrder, CartItem, Order, Product } from "@/lib/mvp-types";
 
 const PRODUCTS_KEY = "secondlife-products";
+const BUY_ORDERS_KEY = "secondlife-buy-orders";
 const CART_KEY = "secondlife-cart";
 const ORDERS_KEY = "secondlife-orders";
 const LIKES_KEY = "secondlife-user-likes";
@@ -72,6 +73,54 @@ const demoProducts: Product[] = [
   },
 ];
 
+const demoBuyOrders: BuyOrder[] = [
+  {
+    id: "b1",
+    title: "Looking for a used MacBook Air",
+    description:
+      "Need a lightweight laptop for schoolwork and travel. Prefer good battery health and charger included.",
+    budget: 4200,
+    category: "Electronics",
+    condition: "Good",
+    image: "/window.svg",
+    location: "Kowloon Tong",
+    buyerName: "Grace Chan",
+    buyerAccount: "gracechan",
+    status: "open",
+    createdAt: "2026-04-01T09:00:00.000Z",
+  },
+  {
+    id: "b2",
+    title: "Need a compact study desk",
+    description:
+      "Searching for a small desk that fits in a student flat. Wood finish preferred, but open to other styles.",
+    budget: 900,
+    category: "Furniture",
+    condition: "Fair",
+    image: "",
+    location: "Sham Shui Po",
+    buyerName: "Jason Ho",
+    buyerAccount: "jasonho",
+    status: "open",
+    createdAt: "2026-04-04T13:30:00.000Z",
+  },
+  {
+    id: "b3",
+    title: "Looking for kids' bicycle",
+    description:
+      "Buying a safe second-hand bicycle for weekend rides. Open to 16-18 inch frames and basic accessories.",
+    budget: 650,
+    category: "Sports",
+    condition: "Like New",
+    image: "",
+    location: "Tsuen Wan",
+    buyerName: "Mina Wong",
+    buyerAccount: "minawong",
+    status: "open",
+    createdAt: "2026-04-07T18:15:00.000Z",
+  },
+];
+
 const safeParse = <T>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
   try {
@@ -133,6 +182,55 @@ export const addProduct = (product: Product): void => {
   if (!ensureBrowser()) return;
   const products = getProducts();
   localStorage.setItem(PRODUCTS_KEY, JSON.stringify([product, ...products]));
+};
+
+export const getBuyOrders = (): BuyOrder[] => {
+  if (!ensureBrowser()) return demoBuyOrders;
+  const stored = safeParse<BuyOrder[]>(localStorage.getItem(BUY_ORDERS_KEY), []);
+  if (stored.length === 0) {
+    localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(demoBuyOrders));
+    return demoBuyOrders;
+  }
+
+  // Ensure at least one demo buy request has an image for marketplace preview.
+  const hasImageOrder = stored.some((order) => order.image && order.image.trim());
+  if (!hasImageOrder) {
+    const imageDemo = demoBuyOrders.find((order) => order.image && order.image.trim());
+    if (imageDemo && !stored.some((order) => order.id === imageDemo.id)) {
+      const migrated = [imageDemo, ...stored];
+      localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  }
+
+  return stored;
+};
+
+export const addBuyOrder = (order: BuyOrder): void => {
+  if (!ensureBrowser()) return;
+  const buyOrders = getBuyOrders();
+  localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify([order, ...buyOrders]));
+};
+
+export const getBuyOrdersByAccount = (account: string): BuyOrder[] =>
+  getBuyOrders().filter((order) => order.buyerAccount === account);
+
+export const updateBuyOrder = (
+  id: string,
+  updates: Partial<BuyOrder>,
+): void => {
+  if (!ensureBrowser()) return;
+  const buyOrders = getBuyOrders();
+  const index = buyOrders.findIndex((order) => order.id === id);
+  if (index === -1) return;
+  buyOrders[index] = { ...buyOrders[index], ...updates };
+  localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(buyOrders));
+};
+
+export const deleteBuyOrder = (id: string): void => {
+  if (!ensureBrowser()) return;
+  const buyOrders = getBuyOrders().filter((order) => order.id !== id);
+  localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(buyOrders));
 };
 
 export const getCart = (): CartItem[] => {

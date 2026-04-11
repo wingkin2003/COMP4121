@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/marketplace", label: "Marketplace" },
+  { href: "/marketplace/sell", label: "Marketplace" },
+  { href: "/buy", label: "Buy" },
   { href: "/sell", label: "Sell" },
   { href: "/cart", label: "Cart" },
   { href: "/checkout", label: "Checkout" },
@@ -23,7 +24,7 @@ export function AppNav() {
   return (
     <header className="site-header">
       <div className="site-shell nav-row">
-        <Link href="/marketplace" className="brand">
+        <Link href="/marketplace/sell" className="brand">
           SecondLife HK
         </Link>
         <nav className="site-nav">

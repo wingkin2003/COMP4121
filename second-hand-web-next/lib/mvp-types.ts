@@ -53,6 +53,21 @@ export type Product = {
   createdAt: string;
 };
 
+export type BuyOrder = {
+  id: string;
+  title: string;
+  description: string;
+  budget: number;
+  category: ProductCategory;
+  condition: ProductCondition;
+  image: string;
+  location: string;
+  buyerName: string;
+  buyerAccount: string;
+  status: "open" | "matched" | "closed";
+  createdAt: string;
+};
+
 export type CartItem = {
   productId: string;
   quantity: number;
