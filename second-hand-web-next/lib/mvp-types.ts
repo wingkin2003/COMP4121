@@ -55,6 +55,7 @@ export type Product = {
   title: string;
   description: string;
   price: number;
+  quantity: number;
   category: ProductCategory;
   condition: ProductCondition;
   image: string;

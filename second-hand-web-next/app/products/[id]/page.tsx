@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addToCart, getProducts } from "@/lib/mvp-data";
+import {
+  addToCart,
+  getProductAvailableQuantity,
+  getProducts,
+} from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { Product } from "@/lib/mvp-types";
 import { CommentSection } from "@/components/CommentSection";
@@ -46,20 +50,39 @@ export default function ProductDetailPage() {
     );
   }
 
+  const availableQuantity = getProductAvailableQuantity(product.id);
+  const isOutOfStock = availableQuantity <= 0;
+
   const handleAdd = () => {
-    addToCart(product.id);
-    setMessage("Added to cart.");
+    const result = addToCart(product.id);
+    if (result === "added") {
+      setMessage("Added to cart.");
+      return;
+    }
+    if (result === "max-reached") {
+      setMessage(
+        `You already have the maximum available quantity (${availableQuantity}) in cart.`,
+      );
+      return;
+    }
+    setMessage("This product is out of stock.");
   };
 
   return (
     <div className="page-shell">
       <AppNav />
       <main className="page-content">
-        <Link href="/marketplace" className="back-link">← Back to marketplace</Link>
+        <Link href="/marketplace" className="back-link">
+          ← Back to marketplace
+        </Link>
         <div className="detail-card">
           <div className="detail-left">
             {product.image ? (
-              <img src={product.image} alt={product.title} className="detail-img" />
+              <img
+                src={product.image}
+                alt={product.title}
+                className="detail-img"
+              />
             ) : (
               <div className="detail-thumb">{product.category}</div>
             )}
@@ -72,15 +95,35 @@ export default function ProductDetailPage() {
             )}
             <table className="detail-table">
               <tbody>
-                <tr><td className="detail-label">Condition</td><td>{product.condition}</td></tr>
-                <tr><td className="detail-label">Location</td><td>{product.location || "—"}</td></tr>
-                <tr><td className="detail-label">Listed</td><td>{formatHKDate(product.createdAt)}</td></tr>
-                <tr><td className="detail-label">Seller</td><td>{product.sellerName || "—"}</td></tr>
+                <tr>
+                  <td className="detail-label">Condition</td>
+                  <td>{product.condition}</td>
+                </tr>
+                <tr>
+                  <td className="detail-label">Location</td>
+                  <td>{product.location || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="detail-label">Available</td>
+                  <td>{availableQuantity}</td>
+                </tr>
+                <tr>
+                  <td className="detail-label">Listed</td>
+                  <td>{formatHKDate(product.createdAt)}</td>
+                </tr>
+                <tr>
+                  <td className="detail-label">Seller</td>
+                  <td>{product.sellerName || "—"}</td>
+                </tr>
               </tbody>
             </table>
             <div className="detail-actions">
-              <button className="btn btn-fill" onClick={handleAdd}>
-                Add to cart
+              <button
+                className="btn btn-fill"
+                onClick={handleAdd}
+                disabled={isOutOfStock}
+              >
+                {isOutOfStock ? "Out of stock" : "Add to cart"}
               </button>
               <Link href="/cart" className="btn">
                 Go to cart
@@ -94,4 +137,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-

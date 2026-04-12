@@ -28,6 +28,7 @@ const demoProducts: Product[] = [
     description:
       "Excellent condition, battery health at 88%. Includes original box and charging cable.",
     price: 3300,
+    quantity: 1,
     category: "Electronics",
     condition: "Good",
     image: "/window.svg",
@@ -44,6 +45,7 @@ const demoProducts: Product[] = [
     description:
       "Sturdy desk suitable for home office. Light signs of wear, structurally perfect.",
     price: 1200,
+    quantity: 2,
     category: "Furniture",
     condition: "Good",
     image: "/next.svg",
@@ -61,6 +63,7 @@ const demoProducts: Product[] = [
     description:
       "Used only a few times. Clean sole, no tears, perfect for casual training.",
     price: 380,
+    quantity: 3,
     category: "Fashion",
     condition: "Like New",
     image: "/vercel.svg",
@@ -78,6 +81,7 @@ const demoProducts: Product[] = [
     description:
       "Fully working appliance with basket and manual. Good for small households.",
     price: 450,
+    quantity: 1,
     category: "Appliances",
     condition: "Fair",
     image: "/globe.svg",
@@ -262,6 +266,11 @@ const safeParse = <T>(value: string | null, fallback: T): T => {
   }
 };
 
+const normalizeQuantity = (value: number | null | undefined): number => {
+  if (value == null || Number.isNaN(value)) return 0;
+  return Math.max(0, Math.floor(value));
+};
+
 const ensureBrowser = () => typeof window !== "undefined";
 
 export const getCurrentAccount = (): string => {
@@ -299,6 +308,16 @@ export const getProducts = (): Product[] => {
     if (!p.status) {
       p.status = "selling";
       dirty = true;
+    }
+    if (p.quantity == null) {
+      p.quantity = 1;
+      dirty = true;
+    } else {
+      const normalizedQuantity = normalizeQuantity(p.quantity);
+      if (normalizedQuantity !== p.quantity) {
+        p.quantity = normalizedQuantity;
+        dirty = true;
+      }
     }
     if (p.likes == null) {
       p.likes = 0;
@@ -374,30 +393,108 @@ export const deleteBuyOrder = (id: string): void => {
   localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(buyOrders));
 };
 
+const normalizeCartItems = (items: CartItem[]): CartItem[] => {
+  const requestedByProduct = new Map<string, number>();
+  for (const item of items) {
+    const requested = normalizeQuantity(item.quantity);
+    if (requested <= 0) continue;
+    requestedByProduct.set(
+      item.productId,
+      (requestedByProduct.get(item.productId) || 0) + requested,
+    );
+  }
+
+  const products = getProducts();
+  const normalized: CartItem[] = [];
+
+  for (const [productId, requested] of requestedByProduct.entries()) {
+    const product = products.find((entry) => entry.id === productId);
+    if (!product || product.status !== "selling") continue;
+    const stock = normalizeQuantity(product.quantity);
+    if (stock <= 0) continue;
+    normalized.push({
+      productId,
+      quantity: Math.min(requested, stock),
+    });
+  }
+
+  return normalized;
+};
+
 export const getCart = (): CartItem[] => {
   if (!ensureBrowser()) return [];
-  return safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
+  const stored = safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
+  const normalized = normalizeCartItems(stored);
+
+  const changed =
+    stored.length !== normalized.length ||
+    stored.some(
+      (item, index) =>
+        item.productId !== normalized[index]?.productId ||
+        item.quantity !== normalized[index]?.quantity,
+    );
+
+  if (changed) {
+    localStorage.setItem(CART_KEY, JSON.stringify(normalized));
+  }
+
+  return normalized;
 };
 
 export const setCart = (items: CartItem[]): void => {
   if (!ensureBrowser()) return;
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  const normalized = normalizeCartItems(items);
+  localStorage.setItem(CART_KEY, JSON.stringify(normalized));
 };
 
-export const addToCart = (productId: string): void => {
+export const getProductAvailableQuantity = (productId: string): number => {
+  const product = getProducts().find((entry) => entry.id === productId);
+  if (!product || product.status !== "selling") return 0;
+  return normalizeQuantity(product.quantity);
+};
+
+export const updateCartItemQuantity = (
+  productId: string,
+  quantity: number,
+): number => {
+  const maxAllowed = getProductAvailableQuantity(productId);
+  const desired = normalizeQuantity(quantity);
+  const nextQuantity = Math.min(desired, maxAllowed);
+  const current = getCart();
+  const exists = current.some((item) => item.productId === productId);
+
+  if (!exists && nextQuantity <= 0) return 0;
+
+  const next = current
+    .map((item) =>
+      item.productId === productId ? { ...item, quantity: nextQuantity } : item,
+    )
+    .filter((item) => item.quantity > 0);
+
+  if (!exists && nextQuantity > 0) {
+    next.push({ productId, quantity: nextQuantity });
+  }
+
+  setCart(next);
+  return nextQuantity;
+};
+
+export const addToCart = (
+  productId: string,
+): "added" | "max-reached" | "unavailable" => {
+  const maxAllowed = getProductAvailableQuantity(productId);
+  if (maxAllowed <= 0) return "unavailable";
+
   const current = getCart();
   const existing = current.find((item) => item.productId === productId);
-  if (existing) {
-    setCart(
-      current.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
-      ),
-    );
-    return;
+
+  if (existing && existing.quantity >= maxAllowed) {
+    return "max-reached";
   }
-  setCart([...current, { productId, quantity: 1 }]);
+
+  const nextQuantity = (existing?.quantity || 0) + 1;
+  updateCartItemQuantity(productId, nextQuantity);
+  return "added";
 };
 
 export const getOrders = (): Order[] => {
@@ -409,6 +506,33 @@ export const addOrder = (order: Order): void => {
   if (!ensureBrowser()) return;
   const existing = getOrders();
   localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...existing]));
+};
+
+export const reduceProductStock = (items: CartItem[]): void => {
+  if (!ensureBrowser()) return;
+  const products = getProducts();
+  let dirty = false;
+
+  for (const item of items) {
+    const product = products.find((entry) => entry.id === item.productId);
+    if (!product) continue;
+
+    const currentStock = normalizeQuantity(product.quantity);
+    const purchased = normalizeQuantity(item.quantity);
+    const nextStock = Math.max(0, currentStock - purchased);
+
+    if (nextStock !== currentStock) {
+      product.quantity = nextStock;
+      if (nextStock === 0 && product.status === "selling") {
+        product.status = "sold";
+      }
+      dirty = true;
+    }
+  }
+
+  if (dirty) {
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+  }
 };
 
 /* ---- likes ---- */

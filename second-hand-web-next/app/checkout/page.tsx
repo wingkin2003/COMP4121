@@ -3,7 +3,13 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/app-nav";
-import { addOrder, getCart, getProducts, setCart } from "@/lib/mvp-data";
+import {
+  addOrder,
+  getCart,
+  getProducts,
+  reduceProductStock,
+  setCart,
+} from "@/lib/mvp-data";
 import { formatHKD } from "@/lib/format";
 
 const COMMISSION_RATE = 0.04;
@@ -22,8 +28,11 @@ export default function CheckoutPage() {
       if (!product) return null;
       return { product, quantity: item.quantity };
     })
-    .filter((entry): entry is { product: (typeof products)[number]; quantity: number } =>
-      Boolean(entry),
+    .filter(
+      (
+        entry,
+      ): entry is { product: (typeof products)[number]; quantity: number } =>
+        Boolean(entry),
     );
 
   const subtotal = rows.reduce(
@@ -36,26 +45,53 @@ export default function CheckoutPage() {
   const handlePay = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const latestProducts = getProducts();
+    const latestCart = getCart();
+    const latestRows = latestCart
+      .map((item) => {
+        const product = latestProducts.find(
+          (entry) => entry.id === item.productId,
+        );
+        if (!product) return null;
+        return { product, quantity: item.quantity };
+      })
+      .filter(
+        (
+          entry,
+        ): entry is {
+          product: (typeof latestProducts)[number];
+          quantity: number;
+        } => Boolean(entry),
+      );
+
     if (!address.trim()) {
       setMessage("Please provide a Hong Kong shipping address.");
       return;
     }
 
-    if (rows.length === 0) {
+    if (latestRows.length === 0) {
       setMessage("Your cart is empty.");
       return;
     }
 
+    const latestSubtotal = latestRows.reduce(
+      (sum, row) => sum + row.product.price * row.quantity,
+      0,
+    );
+    const latestCommission = Math.round(latestSubtotal * COMMISSION_RATE);
+    const latestSellerPayout = latestSubtotal - latestCommission;
+
     addOrder({
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      items: cart,
-      subtotal,
-      commission,
-      sellerPayout,
-      total: subtotal,
+      items: latestCart,
+      subtotal: latestSubtotal,
+      commission: latestCommission,
+      sellerPayout: latestSellerPayout,
+      total: latestSubtotal,
       shippingAddress: address.trim(),
     });
+    reduceProductStock(latestCart);
     setCart([]);
     setAddress("");
     setVersion((value) => value + 1);
@@ -66,7 +102,9 @@ export default function CheckoutPage() {
     <div className="page-shell">
       <AppNav />
       <main className="page-content">
-        <Link href="/cart" className="back-link">← Back to cart</Link>
+        <Link href="/cart" className="back-link">
+          ← Back to cart
+        </Link>
 
         <div className="section-header">
           <h1>Checkout</h1>

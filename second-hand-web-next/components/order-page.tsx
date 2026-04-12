@@ -34,6 +34,7 @@ export function OrderPage({ mode }: OrderPageProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [listingQuantity, setListingQuantity] = useState("1");
   const [category, setCategory] = useState<ProductCategory>("Electronics");
   const [condition, setCondition] = useState<ProductCondition>("Good");
   const [sustainabilityTag, setSustainabilityTag] = useState<
@@ -68,6 +69,7 @@ export function OrderPage({ mode }: OrderPageProps) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const numericAmount = Number(amount);
+    const numericQuantity = Math.floor(Number(listingQuantity));
     if (!title || Number.isNaN(numericAmount) || numericAmount <= 0) {
       setResult(
         isSell
@@ -76,6 +78,11 @@ export function OrderPage({ mode }: OrderPageProps) {
             ? "Please provide a title and valid budget."
             : "Please provide a title and valid daily rental price.",
       );
+      return;
+    }
+
+    if (isSell && (!Number.isFinite(numericQuantity) || numericQuantity <= 0)) {
+      setResult("Please provide a valid quantity.");
       return;
     }
 
@@ -134,6 +141,7 @@ export function OrderPage({ mode }: OrderPageProps) {
         sellerAccount: getCurrentAccount(),
         status: "selling",
         likes: 0,
+        quantity: numericQuantity,
         createdAt: new Date().toISOString(),
         sustainabilityTag:
           sustainabilityTag === "None" ? undefined : sustainabilityTag,
@@ -158,6 +166,7 @@ export function OrderPage({ mode }: OrderPageProps) {
     setTitle("");
     setDescription("");
     setAmount("");
+    setListingQuantity("1");
     setDisplayName("");
     setLocation("");
     setSustainabilityTag("None");
@@ -345,6 +354,20 @@ export function OrderPage({ mode }: OrderPageProps) {
                 onChange={(event) => setAmount(event.target.value)}
               />
             </label>
+
+            {isSell ? (
+              <label>
+                Quantity available
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  placeholder="1"
+                  value={listingQuantity}
+                  onChange={(event) => setListingQuantity(event.target.value)}
+                />
+              </label>
+            ) : null}
 
             {isRent && (
               <>
