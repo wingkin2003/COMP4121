@@ -1,10 +1,23 @@
-import { BuyOrder, CartItem, Order, Product } from "@/lib/mvp-types";
+import {
+  BuyOrder,
+  CartItem,
+  MysteryBoxPurchase,
+  MysteryBoxTier,
+  MYSTERY_BOX_TIERS,
+  Order,
+  Product,
+  RentalListing,
+  RentalOrder,
+} from "@/lib/mvp-types";
 
 const PRODUCTS_KEY = "secondlife-products";
 const BUY_ORDERS_KEY = "secondlife-buy-orders";
 const CART_KEY = "secondlife-cart";
 const ORDERS_KEY = "secondlife-orders";
 const LIKES_KEY = "secondlife-user-likes";
+const RENTALS_KEY = "secondlife-rentals";
+const RENTAL_ORDERS_KEY = "secondlife-rental-orders";
+const MYSTERY_BOX_PURCHASES_KEY = "secondlife-mystery-box-purchases";
 
 const demoProducts: Product[] = [
   {
@@ -118,6 +131,66 @@ const demoBuyOrders: BuyOrder[] = [
     buyerAccount: "minawong",
     status: "open",
     createdAt: "2026-04-07T18:15:00.000Z",
+  },
+];
+
+const demoRentals: RentalListing[] = [
+  {
+    id: "r1",
+    title: "Sony A7 III Camera Body",
+    description:
+      "Full-frame mirrorless camera available for short-term rental. Ideal for events, travel, or trying before buying. Comes with battery and charger.",
+    dailyPrice: 180,
+    deposit: 2000,
+    minDays: 1,
+    maxDays: 14,
+    category: "Electronics",
+    condition: "Good",
+    image: "/window.svg",
+    location: "Central",
+    ownerName: "Derek Lam",
+    ownerAccount: "dereklam",
+    status: "available",
+    likes: 4,
+    createdAt: "2026-03-25T08:00:00.000Z",
+  },
+  {
+    id: "r2",
+    title: "Camping Tent (4-Person)",
+    description:
+      "Waterproof dome tent perfect for weekend camping trips. Easy to set up. Includes carry bag and stakes.",
+    dailyPrice: 60,
+    deposit: 300,
+    minDays: 2,
+    maxDays: 7,
+    category: "Sports",
+    condition: "Like New",
+    image: "/globe.svg",
+    location: "Tai Po",
+    ownerName: "Fiona Yip",
+    ownerAccount: "fionayip",
+    status: "available",
+    likes: 6,
+    createdAt: "2026-03-28T12:00:00.000Z",
+  },
+  {
+    id: "r3",
+    title: "Stand Mixer – KitchenAid",
+    description:
+      "Rent for baking projects or holiday cooking. Comes with whisk, paddle, and dough hook attachments.",
+    dailyPrice: 45,
+    deposit: 500,
+    minDays: 1,
+    maxDays: 10,
+    category: "Appliances",
+    condition: "Good",
+    image: "/next.svg",
+    location: "Sha Tin",
+    ownerName: "Alan Tse",
+    ownerAccount: "alantse",
+    status: "available",
+    likes: 2,
+    createdAt: "2026-04-02T09:30:00.000Z",
   },
 ];
 
@@ -323,4 +396,159 @@ export const updateProduct = (id: string, updates: Partial<Product>): void => {
 
 export const getProductsByAccount = (account: string): Product[] =>
   getProducts().filter((p) => p.sellerAccount === account);
+
+/* ---- Rentals ---- */
+
+export const getRentals = (): RentalListing[] => {
+  if (!ensureBrowser()) return demoRentals;
+  const stored = safeParse<RentalListing[]>(localStorage.getItem(RENTALS_KEY), []);
+  if (stored.length === 0) {
+    localStorage.setItem(RENTALS_KEY, JSON.stringify(demoRentals));
+    return demoRentals;
+  }
+  return stored;
+};
+
+export const addRental = (rental: RentalListing): void => {
+  if (!ensureBrowser()) return;
+  const rentals = getRentals();
+  localStorage.setItem(RENTALS_KEY, JSON.stringify([rental, ...rentals]));
+};
+
+export const updateRental = (id: string, updates: Partial<RentalListing>): void => {
+  if (!ensureBrowser()) return;
+  const rentals = getRentals();
+  const idx = rentals.findIndex((r) => r.id === id);
+  if (idx === -1) return;
+  rentals[idx] = { ...rentals[idx], ...updates };
+  localStorage.setItem(RENTALS_KEY, JSON.stringify(rentals));
+};
+
+export const getRentalsByAccount = (account: string): RentalListing[] =>
+  getRentals().filter((r) => r.ownerAccount === account);
+
+export const getRentalOrders = (): RentalOrder[] => {
+  if (!ensureBrowser()) return [];
+  return safeParse<RentalOrder[]>(localStorage.getItem(RENTAL_ORDERS_KEY), []);
+};
+
+export const addRentalOrder = (order: RentalOrder): void => {
+  if (!ensureBrowser()) return;
+  const orders = getRentalOrders();
+  localStorage.setItem(RENTAL_ORDERS_KEY, JSON.stringify([order, ...orders]));
+};
+
+export const getRentalOrdersByAccount = (account: string): RentalOrder[] =>
+  getRentalOrders().filter((o) => o.renterAccount === account);
+
+export const updateRentalOrder = (id: string, updates: Partial<RentalOrder>): void => {
+  if (!ensureBrowser()) return;
+  const orders = getRentalOrders();
+  const idx = orders.findIndex((o) => o.id === id);
+  if (idx === -1) return;
+  orders[idx] = { ...orders[idx], ...updates };
+  localStorage.setItem(RENTAL_ORDERS_KEY, JSON.stringify(orders));
+};
+
+/* ---- Mystery Box ---- */
+
+/** How many days a product needs to be listed before qualifying for mystery box */
+const MYSTERY_BOX_STALE_DAYS = 14;
+
+/** Get products that qualify for mystery box invitation (stale, unsold, not yet invited) */
+export const getStaleProducts = (account: string): Product[] => {
+  const now = Date.now();
+  return getProducts().filter((p) => {
+    if (p.sellerAccount !== account) return false;
+    if (p.status !== "selling") return false;
+    if (p.inMysteryBox) return false;
+    const age = now - new Date(p.createdAt).getTime();
+    return age >= MYSTERY_BOX_STALE_DAYS * 24 * 60 * 60 * 1000;
+  });
+};
+
+/** Move a product into the mystery box pool */
+export const moveToMysteryBox = (productId: string): void => {
+  updateProduct(productId, { status: "mystery-box", inMysteryBox: true, mysteryBoxInvited: true });
+};
+
+/** Get all products currently in the mystery box pool */
+export const getMysteryBoxProducts = (): Product[] =>
+  getProducts().filter((p) => p.inMysteryBox && p.status === "mystery-box");
+
+/** Determine which tier a product belongs to based on its original price */
+export const getProductTier = (price: number): typeof MYSTERY_BOX_TIERS[number] | null => {
+  for (const tier of MYSTERY_BOX_TIERS) {
+    if (price <= tier.maxOriginalPrice) return tier;
+  }
+  return null;
+};
+
+/** Count items per tier currently in the mystery box pool */
+export const getMysteryBoxCounts = (): Record<string, number> => {
+  const products = getMysteryBoxProducts();
+  const counts: Record<string, number> = {};
+  for (const tier of MYSTERY_BOX_TIERS) {
+    counts[tier.tier] = 0;
+  }
+  for (const p of products) {
+    const tier = getProductTier(p.price);
+    if (tier) {
+      counts[tier.tier] = (counts[tier.tier] || 0) + 1;
+    }
+  }
+  return counts;
+};
+
+/** Purchase a mystery box — picks a random product from the tier */
+export const purchaseMysteryBox = (
+  tierKey: string,
+  buyerAccount: string,
+): MysteryBoxPurchase | null => {
+  const tier = MYSTERY_BOX_TIERS.find((t) => t.tier === tierKey);
+  if (!tier) return null;
+
+  const products = getMysteryBoxProducts().filter((p) => {
+    const t = getProductTier(p.price);
+    return t?.tier === tierKey;
+  });
+
+  if (products.length === 0) return null;
+
+  const picked = products[Math.floor(Math.random() * products.length)];
+
+  // Mark the product as sold and remove from mystery box pool
+  updateProduct(picked.id, { status: "sold", inMysteryBox: false });
+
+  const purchase: MysteryBoxPurchase = {
+    id: crypto.randomUUID(),
+    tier: tier.tier,
+    pricePaid: tier.price,
+    productId: picked.id,
+    productTitle: picked.title,
+    originalPrice: picked.price,
+    buyerAccount,
+    createdAt: new Date().toISOString(),
+  };
+
+  // save purchase
+  const purchases = getMysteryBoxPurchases();
+  localStorage.setItem(
+    MYSTERY_BOX_PURCHASES_KEY,
+    JSON.stringify([purchase, ...purchases]),
+  );
+
+  return purchase;
+};
+
+export const getMysteryBoxPurchases = (): MysteryBoxPurchase[] => {
+  if (!ensureBrowser()) return [];
+  return safeParse<MysteryBoxPurchase[]>(
+    localStorage.getItem(MYSTERY_BOX_PURCHASES_KEY),
+    [],
+  );
+};
+
+export const getMysteryBoxPurchasesByAccount = (account: string): MysteryBoxPurchase[] =>
+  getMysteryBoxPurchases().filter((p) => p.buyerAccount === account);
 

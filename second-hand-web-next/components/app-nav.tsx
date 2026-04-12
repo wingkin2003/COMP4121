@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/marketplace/sell", label: "Marketplace" },
   { href: "/order/sell", label: "Order" },
+  { href: "/mystery-box", label: "Mystery Box" },
   { href: "/cart", label: "Cart" },
   { href: "/checkout", label: "Checkout" },
   { href: "/profile", label: "Profile" },
@@ -20,6 +21,9 @@ export function AppNav() {
     }
     if (href === "/order/sell") {
       return pathname.startsWith("/order") || pathname === "/buy" || pathname === "/sell";
+    }
+    if (href === "/mystery-box") {
+      return pathname.startsWith("/mystery-box");
     }
     return pathname === href;
   };

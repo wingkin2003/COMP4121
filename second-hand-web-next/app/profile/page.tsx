@@ -6,9 +6,17 @@ import { AppNav } from "@/components/app-nav";
 import {
     getBuyOrdersByAccount,
     getProductsByAccount,
+    getRentalsByAccount,
+    getRentalOrdersByAccount,
+    getStaleProducts,
+    getMysteryBoxPurchasesByAccount,
     updateBuyOrder,
     updateProduct,
+    updateRental,
+    updateRentalOrder,
+    moveToMysteryBox,
     getCurrentAccount,
+    getProductTier,
 } from "@/lib/mvp-data";
 import {
     BuyOrder,
@@ -16,9 +24,14 @@ import {
     ProductCategory,
     ProductCondition,
     ProductStatus,
+    RentalListing,
+    RentalOrder,
+    RentalStatus,
+    MysteryBoxPurchase,
     PRODUCT_STATUSES,
     PRODUCT_CATEGORIES,
     PRODUCT_CONDITIONS,
+    RENTAL_STATUSES,
 } from "@/lib/mvp-types";
 import { formatHKD, formatHKDate } from "@/lib/format";
 
@@ -48,6 +61,16 @@ export default function ProfilePage() {
     const [buyMsg, setBuyMsg] = useState<string | null>(null);
     const buyFileRef = useRef<HTMLInputElement>(null);
 
+    // Rental state
+    const [rentals, setRentals] = useState<RentalListing[]>([]);
+    const [rentalBookings, setRentalBookings] = useState<RentalOrder[]>([]);
+    const [rentalBookingMsg, setRentalBookingMsg] = useState<string | null>(null);
+
+    // Mystery box state
+    const [staleProducts, setStaleProducts] = useState<Product[]>([]);
+    const [mysteryPurchases, setMysteryPurchases] = useState<MysteryBoxPurchase[]>([]);
+    const [mysteryMsg, setMysteryMsg] = useState<string | null>(null);
+
     useEffect(() => {
         const timer = window.setTimeout(() => {
             const user = getCurrentAccount();
@@ -65,6 +88,10 @@ export default function ProfilePage() {
 
             setProducts(getProductsByAccount(user));
             setBuyOrders(getBuyOrdersByAccount(user));
+            setRentals(getRentalsByAccount(user));
+            setRentalBookings(getRentalOrdersByAccount(user));
+            setStaleProducts(getStaleProducts(user));
+            setMysteryPurchases(getMysteryBoxPurchasesByAccount(user));
             setLoaded(true);
         }, 0);
 
@@ -77,6 +104,63 @@ export default function ProfilePage() {
 
     const refreshBuyOrders = () => {
         setBuyOrders(getBuyOrdersByAccount(account));
+    };
+
+    const refreshRentals = () => {
+        setRentals(getRentalsByAccount(account));
+    };
+
+    const refreshRentalBookings = () => {
+        setRentalBookings(getRentalOrdersByAccount(account));
+    };
+
+    const handleCancelBooking = (id: string) => {
+        updateRentalOrder(id, { status: "cancelled" });
+        refreshRentalBookings();
+        setRentalBookingMsg("Booking cancelled.");
+        setTimeout(() => setRentalBookingMsg(null), 2000);
+    };
+
+    const refreshStaleProducts = () => {
+        setStaleProducts(getStaleProducts(account));
+        setProducts(getProductsByAccount(account));
+    };
+
+    const handleRentalStatusChange = (id: string, status: RentalStatus) => {
+        updateRental(id, { status });
+        refreshRentals();
+    };
+
+    const handleRentalUnpublish = (id: string) => {
+        updateRental(id, { status: "unpublished" });
+        refreshRentals();
+    };
+
+    const handleMoveToMysteryBox = (productId: string) => {
+        moveToMysteryBox(productId);
+        refreshStaleProducts();
+        setMysteryMsg("Item moved to Mystery Box!");
+        setTimeout(() => setMysteryMsg(null), 2000);
+    };
+
+    const rentalStatusLabel = (s: RentalStatus) => {
+        switch (s) {
+            case "available": return "Available";
+            case "rented": return "Rented";
+            case "returned": return "Returned";
+            case "unpublished": return "Unpublished";
+            default: return s;
+        }
+    };
+
+    const rentalStatusClass = (s: RentalStatus) => {
+        switch (s) {
+            case "available": return "status-selling";
+            case "rented": return "status-sold";
+            case "returned": return "status-expired";
+            case "unpublished": return "status-unpublished";
+            default: return "";
+        }
     };
 
     const handleStatusChange = (id: string, status: ProductStatus) => {
@@ -249,6 +333,8 @@ export default function ProfilePage() {
                 return "Expired";
             case "unpublished":
                 return "Unpublished";
+            case "mystery-box":
+                return "Mystery Box";
             default:
                 return s;
         }
@@ -264,6 +350,8 @@ export default function ProfilePage() {
                 return "status-expired";
             case "unpublished":
                 return "status-unpublished";
+            case "mystery-box":
+                return "status-mystery";
             default:
                 return "";
         }
@@ -592,6 +680,229 @@ export default function ProfilePage() {
                             </div>
                             {buyMsg && <p className="detail-msg">{buyMsg}</p>}
                         </div>
+                    </div>
+                )}
+
+                {/* ---- my rentals ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Rental Listings</h1>
+                    <p className="muted">{rentals.length} rental{rentals.length !== 1 ? "s" : ""}</p>
+                </div>
+
+                {rentals.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not listed any rental items yet.</p>
+                        <Link href="/order/rent" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Create rental listing
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Daily Price</th>
+                                    <th>Deposit</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Listed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rentals.map((r) => (
+                                    <tr key={r.id}>
+                                        <td><strong>{r.title}</strong></td>
+                                        <td>{formatHKD(r.dailyPrice)}/day</td>
+                                        <td>{formatHKD(r.deposit)}</td>
+                                        <td>{r.minDays}–{r.maxDays} days</td>
+                                        <td>
+                                            <span className={`status-badge ${rentalStatusClass(r.status)}`}>
+                                                {rentalStatusLabel(r.status)}
+                                            </span>
+                                        </td>
+                                        <td className="muted">{formatHKDate(r.createdAt)}</td>
+                                        <td>
+                                            <div className="listing-actions">
+                                                <select
+                                                    value={r.status}
+                                                    onChange={(e) => handleRentalStatusChange(r.id, e.target.value as RentalStatus)}
+                                                    className="status-select"
+                                                >
+                                                    {RENTAL_STATUSES.map((s) => (
+                                                        <option key={s} value={s}>{rentalStatusLabel(s)}</option>
+                                                    ))}
+                                                </select>
+                                                {r.status !== "unpublished" && (
+                                                    <button className="btn btn-danger-sm" onClick={() => handleRentalUnpublish(r.id)}>
+                                                        Unpublish
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ---- my rental bookings ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Rental Bookings</h1>
+                    <p className="muted">{rentalBookings.length} booking{rentalBookings.length !== 1 ? "s" : ""}</p>
+                </div>
+
+                {rentalBookings.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not booked any rental items yet.</p>
+                        <Link href="/marketplace/rent" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Browse rentals
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        {rentalBookingMsg && <p className="detail-msg">{rentalBookingMsg}</p>}
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Duration</th>
+                                    <th>Rental Fee</th>
+                                    <th>Deposit</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Booked</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rentalBookings.map((b) => (
+                                    <tr key={b.id}>
+                                        <td>
+                                            <Link href={`/rentals/${b.rentalId}`} className="listing-title">
+                                                {b.rentalTitle || "Rental item"}
+                                            </Link>
+                                        </td>
+                                        <td>{b.days} day{b.days !== 1 ? "s" : ""}</td>
+                                        <td>{formatHKD(b.rentalFee)}</td>
+                                        <td>{formatHKD(b.deposit)}</td>
+                                        <td>{formatHKD(b.total)}</td>
+                                        <td>
+                                            <span className={`status-badge ${
+                                                b.status === "active" ? "status-selling" :
+                                                b.status === "returned" ? "status-expired" :
+                                                b.status === "cancelled" ? "status-unpublished" :
+                                                "status-sold"
+                                            }`}>
+                                                {b.status === "active" ? "Active" :
+                                                 b.status === "returned" ? "Returned" :
+                                                 b.status === "cancelled" ? "Cancelled" : "Overdue"}
+                                            </span>
+                                        </td>
+                                        <td className="muted">{formatHKDate(b.createdAt)}</td>
+                                        <td>
+                                            {b.status === "active" && (
+                                                <button className="btn btn-danger-sm" onClick={() => handleCancelBooking(b.id)}>
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ---- Mystery Box Invitations ---- */}
+                {staleProducts.length > 0 && (
+                    <>
+                        <div className="section-header" style={{ marginTop: "2rem" }}>
+                            <h1>Mystery Box Invitations</h1>
+                            <p className="muted">
+                                These items have been listed for 14+ days. Move them to the Mystery Box to recover value!
+                            </p>
+                        </div>
+                        {mysteryMsg && <p className="detail-msg">{mysteryMsg}</p>}
+                        <div className="listing-table-wrap">
+                            <table className="listing-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Original Price</th>
+                                        <th>Box Tier</th>
+                                        <th>You Receive (70%)</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {staleProducts.map((p) => {
+                                        const tier = getProductTier(p.price);
+                                        return (
+                                            <tr key={p.id}>
+                                                <td><strong>{p.title}</strong></td>
+                                                <td>{formatHKD(p.price)}</td>
+                                                <td>{tier ? <span className="status-badge status-mystery">{tier.label}</span> : <span className="muted">Too expensive</span>}</td>
+                                                <td>{tier ? formatHKD(tier.price * 0.7) : "—"}</td>
+                                                <td>
+                                                    {tier ? (
+                                                        <button className="btn btn-fill" onClick={() => handleMoveToMysteryBox(p.id)}>
+                                                            Move to Mystery Box
+                                                        </button>
+                                                    ) : (
+                                                        <span className="muted">Not eligible</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {/* ---- Mystery Box Purchases ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Mystery Box Purchases</h1>
+                    <p className="muted">{mysteryPurchases.length} box{mysteryPurchases.length !== 1 ? "es" : ""} opened</p>
+                </div>
+
+                {mysteryPurchases.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not purchased any mystery boxes yet.</p>
+                        <Link href="/mystery-box" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Browse Mystery Boxes
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Tier</th>
+                                    <th>Item Received</th>
+                                    <th>Original Price</th>
+                                    <th>You Paid</th>
+                                    <th>Saved</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {mysteryPurchases.map((p) => (
+                                    <tr key={p.id}>
+                                        <td><span className="status-badge status-mystery">{p.tier} Box</span></td>
+                                        <td><strong>{p.productTitle}</strong></td>
+                                        <td className="muted"><s>{formatHKD(p.originalPrice)}</s></td>
+                                        <td>{formatHKD(p.pricePaid)}</td>
+                                        <td className="mystery-savings-cell">{formatHKD(p.originalPrice - p.pricePaid)}</td>
+                                        <td className="muted">{formatHKDate(p.createdAt)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </main>

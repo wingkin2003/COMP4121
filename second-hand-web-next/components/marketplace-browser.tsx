@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { AppNav } from "@/components/app-nav";
-import { getBuyOrders, getProducts } from "@/lib/mvp-data";
+import { getBuyOrders, getProducts, getRentals } from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import {
   PRODUCT_CATEGORIES,
@@ -13,9 +13,10 @@ import {
   Product,
   ProductCategory,
   ProductCondition,
+  RentalListing,
 } from "@/lib/mvp-types";
 
-type MarketplaceMode = "sell" | "buy";
+type MarketplaceMode = "sell" | "buy" | "rent";
 
 type MarketplaceBrowserProps = {
   mode: MarketplaceMode;
@@ -23,6 +24,7 @@ type MarketplaceBrowserProps = {
 
 type SellSortMode = "newest" | "oldest" | "price-asc" | "price-desc";
 type BuySortMode = "newest" | "oldest" | "budget-asc" | "budget-desc";
+type RentSortMode = "newest" | "oldest" | "daily-asc" | "daily-desc";
 
 const BUY_CATEGORY_OPTIONS: ProductCategory[] = PRODUCT_CATEGORIES;
 const BUY_CONDITION_OPTIONS: ProductCondition[] = PRODUCT_CONDITIONS;
@@ -33,8 +35,10 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
   const [condition, setCondition] = useState<"All" | ProductCondition>("All");
   const [sellSortBy, setSellSortBy] = useState<SellSortMode>("newest");
   const [buySortBy, setBuySortBy] = useState<BuySortMode>("newest");
+  const [rentSortBy, setRentSortBy] = useState<RentSortMode>("newest");
   const [products] = useState<Product[]>(() => getProducts());
   const [orders] = useState<BuyOrder[]>(() => getBuyOrders());
+  const [rentals] = useState<RentalListing[]>(() => getRentals());
 
   const sellFiltered = useMemo(() => {
     return [...products]
@@ -88,8 +92,40 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
       });
   }, [orders, query, category, condition, buySortBy]);
 
+  const rentFiltered = useMemo(() => {
+    return [...rentals]
+      .filter((r) => r.status === "available")
+      .filter((r) =>
+        r.title.toLowerCase().includes(query.trim().toLowerCase()),
+      )
+      .filter((r) =>
+        category === "All" ? true : r.category === category,
+      )
+      .filter((r) =>
+        condition === "All" ? true : r.condition === condition,
+      )
+      .sort((a, b) => {
+        if (rentSortBy === "newest") {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        if (rentSortBy === "oldest") {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+        if (rentSortBy === "daily-asc") {
+          return a.dailyPrice - b.dailyPrice;
+        }
+        return b.dailyPrice - a.dailyPrice;
+      });
+  }, [rentals, query, category, condition, rentSortBy]);
+
   const isSell = mode === "sell";
-  const itemsEmpty = isSell ? sellFiltered.length === 0 : buyFiltered.length === 0;
+  const isBuy = mode === "buy";
+  const isRent = mode === "rent";
+  const itemsEmpty = isSell
+    ? sellFiltered.length === 0
+    : isBuy
+    ? buyFiltered.length === 0
+    : rentFiltered.length === 0;
 
   return (
     <div className="page-shell">
@@ -100,7 +136,9 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
           <p className="muted">
             {isSell
               ? "Discover second-hand listings across Hong Kong."
-              : "Browse buy requests posted by customers."}
+              : isBuy
+              ? "Browse buy requests posted by customers."
+              : "Rent items for short-term use — save money, reduce waste."}
           </p>
           <div className="marketplace-tabs">
             <Link
@@ -112,16 +150,29 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
             </Link>
             <Link
               href="/marketplace/buy"
-              className={`marketplace-tab${!isSell ? " active" : ""}`}
-              aria-current={!isSell ? "page" : undefined}
+              className={`marketplace-tab${isBuy ? " active" : ""}`}
+              aria-current={isBuy ? "page" : undefined}
             >
               Buy
+            </Link>
+            <Link
+              href="/marketplace/rent"
+              className={`marketplace-tab${isRent ? " active" : ""}`}
+              aria-current={isRent ? "page" : undefined}
+            >
+              Rent
             </Link>
           </div>
           <div className="filters">
             <input
               type="search"
-              placeholder={isSell ? "Search by title..." : "Search by request title..."}
+              placeholder={
+                isSell
+                  ? "Search by title..."
+                  : isBuy
+                  ? "Search by request title..."
+                  : "Search rentals..."
+              }
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -161,7 +212,7 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                 <option value="price-asc">Price low to high</option>
                 <option value="price-desc">Price high to low</option>
               </select>
-            ) : (
+            ) : isBuy ? (
               <select
                 value={buySortBy}
                 onChange={(event) => setBuySortBy(event.target.value as BuySortMode)}
@@ -171,13 +222,27 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                 <option value="budget-asc">Budget low to high</option>
                 <option value="budget-desc">Budget high to low</option>
               </select>
+            ) : (
+              <select
+                value={rentSortBy}
+                onChange={(event) => setRentSortBy(event.target.value as RentSortMode)}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="daily-asc">Daily price low to high</option>
+                <option value="daily-desc">Daily price high to low</option>
+              </select>
             )}
           </div>
         </div>
 
         {itemsEmpty ? (
           <p className="muted" style={{ textAlign: "center", marginTop: "2rem" }}>
-            {isSell ? "No products matched your filters." : "No buy requests matched your filters."}
+            {isSell
+              ? "No products matched your filters."
+              : isBuy
+              ? "No buy requests matched your filters."
+              : "No rental listings matched your filters."}
           </p>
         ) : isSell ? (
           <div className="grid-cards">
@@ -185,7 +250,7 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        ) : (
+        ) : isBuy ? (
           <div className="request-grid">
             {buyFiltered.map((order) => (
               <article key={order.id} className="request-card">
@@ -210,6 +275,34 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                   <span>{formatHKDate(order.createdAt)}</span>
                 </div>
               </article>
+            ))}
+          </div>
+        ) : (
+          <div className="grid-cards">
+            {rentFiltered.map((rental) => (
+              <Link key={rental.id} href={`/rentals/${rental.id}`} className="product-card rental-card rental-card-link">
+                <div className="product-img-wrap">
+                  {rental.image ? (
+                    <img src={rental.image} alt={rental.title} />
+                  ) : (
+                    <div className="product-img-placeholder">{rental.category}</div>
+                  )}
+                  <span className="rental-badge">FOR RENT</span>
+                </div>
+                <div className="product-info">
+                  <h3>{rental.title}</h3>
+                  <p className="muted">
+                    {rental.category} · {rental.condition}
+                  </p>
+                  <div className="rental-pricing">
+                    <span className="rental-daily">{formatHKD(rental.dailyPrice)}<small>/day</small></span>
+                    <span className="muted">Deposit: {formatHKD(rental.deposit)}</span>
+                  </div>
+                  <p className="muted" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                    {rental.minDays}–{rental.maxDays} days · {rental.location || "—"}
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         )}
