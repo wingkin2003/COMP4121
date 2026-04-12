@@ -17,8 +17,11 @@ export default function CartPage() {
       if (!product) return null;
       return { product, quantity: item.quantity };
     })
-    .filter((entry): entry is { product: (typeof products)[number]; quantity: number } =>
-      Boolean(entry),
+    .filter(
+      (
+        entry,
+      ): entry is { product: (typeof products)[number]; quantity: number } =>
+        Boolean(entry),
     );
 
   const subtotal = rows.reduce(
@@ -28,7 +31,9 @@ export default function CartPage() {
 
   const updateQty = (productId: string, quantity: number) => {
     const next = getCart()
-      .map((item) => (item.productId === productId ? { ...item, quantity } : item))
+      .map((item) =>
+        item.productId === productId ? { ...item, quantity } : item,
+      )
       .filter((item) => item.quantity > 0);
     setCart(next);
     setVersion((value) => value + 1);
@@ -43,9 +48,16 @@ export default function CartPage() {
         </div>
 
         {rows.length === 0 ? (
-          <div className="content-card" style={{ textAlign: "center", padding: "3rem 1rem" }}>
+          <div
+            className="content-card"
+            style={{ textAlign: "center", padding: "3rem 1rem" }}
+          >
             <p>Cart is empty.</p>
-            <Link href="/marketplace" className="btn" style={{ marginTop: "1rem" }}>
+            <Link
+              href="/marketplace"
+              className="btn"
+              style={{ marginTop: "1rem" }}
+            >
               Browse marketplace
             </Link>
           </div>
@@ -57,12 +69,28 @@ export default function CartPage() {
                   <div key={row.product.id} className="cart-item">
                     <div className="cart-item-info">
                       <strong>{row.product.title}</strong>
-                      <span className="muted">{formatHKD(row.product.price)} each</span>
+                      <span className="muted">
+                        {formatHKD(row.product.price)} each
+                      </span>
                     </div>
                     <div className="cart-qty">
-                      <button className="qty-btn" onClick={() => updateQty(row.product.id, row.quantity - 1)}>−</button>
+                      <button
+                        className="qty-btn"
+                        onClick={() =>
+                          updateQty(row.product.id, row.quantity - 1)
+                        }
+                      >
+                        −
+                      </button>
                       <span className="qty-num">{row.quantity}</span>
-                      <button className="qty-btn" onClick={() => updateQty(row.product.id, row.quantity + 1)}>+</button>
+                      <button
+                        className="qty-btn"
+                        onClick={() =>
+                          updateQty(row.product.id, row.quantity + 1)
+                        }
+                      >
+                        +
+                      </button>
                     </div>
                     <div className="cart-item-total">
                       {formatHKD(row.product.price * row.quantity)}
@@ -75,7 +103,7 @@ export default function CartPage() {
             <div className="cart-footer">
               <span className="price">Subtotal: {formatHKD(subtotal)}</span>
               <Link href="/checkout" className="btn btn-fill">
-                Proceed to checkout
+                Proceed to Stripe checkout
               </Link>
             </div>
           </>
