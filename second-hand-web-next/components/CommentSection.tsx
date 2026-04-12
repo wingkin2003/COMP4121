@@ -31,7 +31,8 @@ const CURRENT_USER = {
 };
 
 // ========== Helper ==========
-const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+const generateId = () =>
+  `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
 // ========== Component Props ==========
 interface CommentSectionProps {
@@ -69,6 +70,20 @@ export function CommentSection({ productId }: CommentSectionProps) {
     setNewCommentText("");
   };
 
+  const handleCommentKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    // Enter submits; Shift+Enter keeps newline support.
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      handleAddComment();
+    }
+  };
+
   const handleAddReply = (commentId: string) => {
     const draft = replyDrafts[commentId] || "";
     if (!draft.trim()) return;
@@ -82,8 +97,8 @@ export function CommentSection({ productId }: CommentSectionProps) {
     };
     setComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c
-      )
+        c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c,
+      ),
     );
     // Clear reply draft and close reply box
     setReplyDrafts((prev) => {
@@ -130,6 +145,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
             placeholder="Ask a question or leave a comment..."
             value={newCommentText}
             onChange={(e) => setNewCommentText(e.target.value)}
+            onKeyDown={handleCommentKeyDown}
           />
           <div className="flex justify-end mt-2">
             <button
@@ -157,8 +173,12 @@ export function CommentSection({ productId }: CommentSectionProps) {
               </div>
               <div className="flex-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="font-medium text-gray-800">{comment.userName}</span>
-                  <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
+                  <span className="font-medium text-gray-800">
+                    {comment.userName}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {formatDate(comment.createdAt)}
+                  </span>
                 </div>
                 <p className="text-gray-700 mt-1">{comment.content}</p>
                 <button
@@ -180,8 +200,12 @@ export function CommentSection({ productId }: CommentSectionProps) {
                         className="w-full border border-gray-300 rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="Write a reply..."
                         value={replyDrafts[comment.id] || ""}
-                        onChange={(e) => updateReplyDraft(comment.id, e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAddReply(comment.id)}
+                        onChange={(e) =>
+                          updateReplyDraft(comment.id, e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleAddReply(comment.id)
+                        }
                       />
                     </div>
                     <button
@@ -203,10 +227,16 @@ export function CommentSection({ productId }: CommentSectionProps) {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-baseline gap-2 flex-wrap">
-                            <span className="font-medium text-gray-800 text-sm">{reply.userName}</span>
-                            <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
+                            <span className="font-medium text-gray-800 text-sm">
+                              {reply.userName}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {formatDate(reply.createdAt)}
+                            </span>
                           </div>
-                          <p className="text-gray-700 text-sm">{reply.content}</p>
+                          <p className="text-gray-700 text-sm">
+                            {reply.content}
+                          </p>
                         </div>
                       </div>
                     ))}

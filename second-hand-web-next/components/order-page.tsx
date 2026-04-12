@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addBuyOrder, addProduct, addRental, addRentalRequest, getCurrentAccount } from "@/lib/mvp-data";
+import {
+  addBuyOrder,
+  addProduct,
+  addRental,
+  addRentalRequest,
+  getCurrentAccount,
+} from "@/lib/mvp-data";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
+  SUSTAINABILITY_TAGS,
   ProductCategory,
   ProductCondition,
+  SustainabilityTag,
 } from "@/lib/mvp-types";
 
 type OrderMode = "sell" | "buy" | "rent" | "rent-request";
@@ -28,6 +36,9 @@ export function OrderPage({ mode }: OrderPageProps) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ProductCategory>("Electronics");
   const [condition, setCondition] = useState<ProductCondition>("Good");
+  const [sustainabilityTag, setSustainabilityTag] = useState<
+    "None" | SustainabilityTag
+  >("None");
   const [location, setLocation] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -62,8 +73,8 @@ export function OrderPage({ mode }: OrderPageProps) {
         isSell
           ? "Please provide a title and valid price."
           : isBuy
-          ? "Please provide a title and valid budget."
-          : "Please provide a title and valid daily rental price.",
+            ? "Please provide a title and valid budget."
+            : "Please provide a title and valid daily rental price.",
       );
       return;
     }
@@ -130,6 +141,8 @@ export function OrderPage({ mode }: OrderPageProps) {
         status: "selling",
         likes: 0,
         createdAt: new Date().toISOString(),
+        sustainabilityTag:
+          sustainabilityTag === "None" ? undefined : sustainabilityTag,
       });
     } else {
       addBuyOrder({
@@ -153,6 +166,7 @@ export function OrderPage({ mode }: OrderPageProps) {
     setAmount("");
     setDisplayName("");
     setLocation("");
+    setSustainabilityTag("None");
     setImagePreview(null);
     setDeposit("");
     setMinDays("1");
@@ -162,20 +176,20 @@ export function OrderPage({ mode }: OrderPageProps) {
       isSell
         ? "Listing created! Redirecting..."
         : isBuy
-        ? "Buy request created! Redirecting..."
-        : isRentRequest
-        ? "Rent request created! Redirecting..."
-        : "Rental listing created! Redirecting...",
+          ? "Buy request created! Redirecting..."
+          : isRentRequest
+            ? "Rent request created! Redirecting..."
+            : "Rental listing created! Redirecting...",
     );
 
     setTimeout(() => {
       window.location.href = isSell
         ? "/marketplace/sell"
         : isBuy
-        ? "/marketplace/buy"
-        : isRentRequest
-        ? "/marketplace/rent/request"
-        : "/marketplace/rent";
+          ? "/marketplace/buy"
+          : isRentRequest
+            ? "/marketplace/rent/request"
+            : "/marketplace/rent";
     }, 1500);
   };
 
@@ -188,19 +202,19 @@ export function OrderPage({ mode }: OrderPageProps) {
             {isSell
               ? "Create listing"
               : isBuy
-              ? "Post buy request"
-              : isRentRequest
-              ? "Post rent request"
-              : "Create rental listing"}
+                ? "Post buy request"
+                : isRentRequest
+                  ? "Post rent request"
+                  : "Create rental listing"}
           </h1>
           <p className="muted">
             {isSell
               ? "Post a second-hand item and start earning."
               : isBuy
-              ? "Tell sellers what you want and your target budget."
-              : isRentRequest
-              ? "Post what you need to rent and your daily budget target."
-              : "List an item for short-term rental and earn while it's not in use."}
+                ? "Tell sellers what you want and your target budget."
+                : isRentRequest
+                  ? "Post what you need to rent and your daily budget target."
+                  : "List an item for short-term rental and earn while it's not in use."}
           </p>
           <div className="order-tabs">
             <Link
@@ -224,10 +238,7 @@ export function OrderPage({ mode }: OrderPageProps) {
             >
               Rent
             </Link>
-            <Link
-              href="/order/mystery-box"
-              className="order-tab"
-            >
+            <Link href="/order/mystery-box" className="order-tab">
               Mystery Box
             </Link>
           </div>
@@ -254,17 +265,21 @@ export function OrderPage({ mode }: OrderPageProps) {
         <div className="content-card">
           <form className="sell-form" onSubmit={handleSubmit}>
             <label>
-              {isSell ? "Title" : isBuy || isRentRequest ? "Request title" : "Rental item title"}
+              {isSell
+                ? "Title"
+                : isBuy || isRentRequest
+                  ? "Request title"
+                  : "Rental item title"}
               <input
                 type="text"
                 placeholder={
                   isSell
                     ? "e.g. iPhone 14 Pro"
                     : isBuy
-                    ? "e.g. Looking for a used iPad"
-                    : isRentRequest
-                    ? "e.g. Looking for DSLR camera rental"
-                    : "e.g. Sony Camera for weekend rental"
+                      ? "e.g. Looking for a used iPad"
+                      : isRentRequest
+                        ? "e.g. Looking for DSLR camera rental"
+                        : "e.g. Sony Camera for weekend rental"
                 }
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -272,16 +287,20 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Description" : isBuy || isRentRequest ? "Details" : "Description"}
+              {isSell
+                ? "Description"
+                : isBuy || isRentRequest
+                  ? "Details"
+                  : "Description"}
               <textarea
                 placeholder={
                   isSell
                     ? "Describe your item..."
                     : isBuy
-                    ? "Describe the item you want..."
-                    : isRentRequest
-                    ? "Describe what you need, required features, expected timeline..."
-                    : "Describe the rental item, what's included, condition notes..."
+                      ? "Describe the item you want..."
+                      : isRentRequest
+                        ? "Describe what you need, required features, expected timeline..."
+                        : "Describe the rental item, what's included, condition notes..."
                 }
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -290,21 +309,40 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Product photo" : isBuy || isRentRequest ? "Reference image (optional)" : "Item photo"}
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} />
+              {isSell
+                ? "Product photo"
+                : isBuy || isRentRequest
+                  ? "Reference image (optional)"
+                  : "Item photo"}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
             </label>
 
             {imagePreview && (
               <div className="img-preview-wrap">
                 <img src={imagePreview} alt="Preview" className="img-preview" />
-                <button type="button" className="img-remove" onClick={removeImage}>
+                <button
+                  type="button"
+                  className="img-remove"
+                  onClick={removeImage}
+                >
                   Remove
                 </button>
               </div>
             )}
 
             <label>
-              {isSell ? "Price (HKD)" : isBuy ? "Budget (HKD)" : isRentRequest ? "Daily budget (HKD)" : "Daily rental price (HKD)"}
+              {isSell
+                ? "Price (HKD)"
+                : isBuy
+                  ? "Budget (HKD)"
+                  : isRentRequest
+                    ? "Daily budget (HKD)"
+                    : "Daily rental price (HKD)"}
               <input
                 type="number"
                 min={1}
@@ -359,7 +397,9 @@ export function OrderPage({ mode }: OrderPageProps) {
                 Category
                 <select
                   value={category}
-                  onChange={(event) => setCategory(event.target.value as ProductCategory)}
+                  onChange={(event) =>
+                    setCategory(event.target.value as ProductCategory)
+                  }
                 >
                   {PRODUCT_CATEGORIES.map((item) => (
                     <option key={item} value={item}>
@@ -372,7 +412,9 @@ export function OrderPage({ mode }: OrderPageProps) {
                 Condition
                 <select
                   value={condition}
-                  onChange={(event) => setCondition(event.target.value as ProductCondition)}
+                  onChange={(event) =>
+                    setCondition(event.target.value as ProductCondition)
+                  }
                 >
                   {PRODUCT_CONDITIONS.map((item) => (
                     <option key={item} value={item}>
@@ -383,8 +425,33 @@ export function OrderPage({ mode }: OrderPageProps) {
               </label>
             </div>
 
+            {isSell ? (
+              <label>
+                Sustainability tag
+                <select
+                  value={sustainabilityTag}
+                  onChange={(event) =>
+                    setSustainabilityTag(
+                      event.target.value as "None" | SustainabilityTag,
+                    )
+                  }
+                >
+                  <option value="None">None</option>
+                  {SUSTAINABILITY_TAGS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
             <label>
-              {isSell ? "Pickup location" : isBuy || isRentRequest ? "Preferred location" : "Pickup / return location"}
+              {isSell
+                ? "Pickup location"
+                : isBuy || isRentRequest
+                  ? "Preferred location"
+                  : "Pickup / return location"}
               <input
                 type="text"
                 placeholder="e.g. Mong Kok"
@@ -394,7 +461,13 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Seller name" : isBuy ? "Buyer name" : isRentRequest ? "Requester name" : "Owner name"}
+              {isSell
+                ? "Seller name"
+                : isBuy
+                  ? "Buyer name"
+                  : isRentRequest
+                    ? "Requester name"
+                    : "Owner name"}
               <input
                 type="text"
                 placeholder="Your name"
@@ -407,10 +480,10 @@ export function OrderPage({ mode }: OrderPageProps) {
               {isSell
                 ? "Publish listing"
                 : isBuy
-                ? "Publish buy request"
-                : isRentRequest
-                ? "Publish rent request"
-                : "Publish rental listing"}
+                  ? "Publish buy request"
+                  : isRentRequest
+                    ? "Publish rent request"
+                    : "Publish rental listing"}
             </button>
             {result && <p className="detail-msg">{result}</p>}
           </form>

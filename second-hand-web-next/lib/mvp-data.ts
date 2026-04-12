@@ -57,6 +57,7 @@ const demoProducts: Product[] = [
     status: "selling",
     likes: 2,
     createdAt: "2026-03-14T10:00:00.000Z",
+    sustainabilityTag: "Upcycled",
   },
   {
     id: "p3",
@@ -73,6 +74,7 @@ const demoProducts: Product[] = [
     status: "selling",
     likes: 8,
     createdAt: "2026-03-18T10:00:00.000Z",
+    sustainabilityTag: "Recyclable",
   },
   {
     id: "p4",
@@ -89,6 +91,7 @@ const demoProducts: Product[] = [
     status: "selling",
     likes: 3,
     createdAt: "2026-03-20T10:00:00.000Z",
+    sustainabilityTag: "Upcycled",
   },
 ];
 
@@ -296,7 +299,9 @@ export const getProducts = (): Product[] => {
         const parsed = JSON.parse(p.sellerAccount);
         p.sellerAccount = parsed.username || "";
         dirty = true;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     if (!p.status) {
       p.status = "selling";
@@ -322,16 +327,23 @@ export const addProduct = (product: Product): void => {
 
 export const getBuyOrders = (): BuyOrder[] => {
   if (!ensureBrowser()) return demoBuyOrders;
-  const stored = safeParse<BuyOrder[]>(localStorage.getItem(BUY_ORDERS_KEY), []);
+  const stored = safeParse<BuyOrder[]>(
+    localStorage.getItem(BUY_ORDERS_KEY),
+    [],
+  );
   if (stored.length === 0) {
     localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(demoBuyOrders));
     return demoBuyOrders;
   }
 
   // Ensure at least one demo buy request has an image for marketplace preview.
-  const hasImageOrder = stored.some((order) => order.image && order.image.trim());
+  const hasImageOrder = stored.some(
+    (order) => order.image && order.image.trim(),
+  );
   if (!hasImageOrder) {
-    const imageDemo = demoBuyOrders.find((order) => order.image && order.image.trim());
+    const imageDemo = demoBuyOrders.find(
+      (order) => order.image && order.image.trim(),
+    );
     if (imageDemo && !stored.some((order) => order.id === imageDemo.id)) {
       const migrated = [imageDemo, ...stored];
       localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(migrated));
@@ -423,7 +435,10 @@ const getUserLikes = (): string[] => {
   if (!ensureBrowser()) return [];
   const user = getCurrentAccount();
   if (!user) return [];
-  const all = safeParse<Record<string, string[]>>(localStorage.getItem(LIKES_KEY), {});
+  const all = safeParse<Record<string, string[]>>(
+    localStorage.getItem(LIKES_KEY),
+    {},
+  );
   return all[user] || [];
 };
 
@@ -431,7 +446,10 @@ const setUserLikes = (liked: string[]): void => {
   if (!ensureBrowser()) return;
   const user = getCurrentAccount();
   if (!user) return;
-  const all = safeParse<Record<string, string[]>>(localStorage.getItem(LIKES_KEY), {});
+  const all = safeParse<Record<string, string[]>>(
+    localStorage.getItem(LIKES_KEY),
+    {},
+  );
   all[user] = liked;
   localStorage.setItem(LIKES_KEY, JSON.stringify(all));
 };
@@ -439,7 +457,9 @@ const setUserLikes = (liked: string[]): void => {
 export const hasUserLiked = (productId: string): boolean =>
   getUserLikes().includes(productId);
 
-export const toggleLike = (productId: string): { liked: boolean; newCount: number } => {
+export const toggleLike = (
+  productId: string,
+): { liked: boolean; newCount: number } => {
   const liked = getUserLikes();
   const products = getProducts();
   const product = products.find((p) => p.id === productId);
@@ -475,7 +495,10 @@ export const getProductsByAccount = (account: string): Product[] =>
 
 export const getRentals = (): RentalListing[] => {
   if (!ensureBrowser()) return demoRentals;
-  const stored = safeParse<RentalListing[]>(localStorage.getItem(RENTALS_KEY), []);
+  const stored = safeParse<RentalListing[]>(
+    localStorage.getItem(RENTALS_KEY),
+    [],
+  );
   if (stored.length === 0) {
     localStorage.setItem(RENTALS_KEY, JSON.stringify(demoRentals));
     return demoRentals;
@@ -491,9 +514,15 @@ export const addRental = (rental: RentalListing): void => {
 
 export const getRentalRequests = (): RentalRequest[] => {
   if (!ensureBrowser()) return demoRentalRequests;
-  const stored = safeParse<RentalRequest[]>(localStorage.getItem(RENTAL_REQUESTS_KEY), []);
+  const stored = safeParse<RentalRequest[]>(
+    localStorage.getItem(RENTAL_REQUESTS_KEY),
+    [],
+  );
   if (stored.length === 0) {
-    localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(demoRentalRequests));
+    localStorage.setItem(
+      RENTAL_REQUESTS_KEY,
+      JSON.stringify(demoRentalRequests),
+    );
     return demoRentalRequests;
   }
 
@@ -515,13 +544,19 @@ export const getRentalRequests = (): RentalRequest[] => {
 export const addRentalRequest = (request: RentalRequest): void => {
   if (!ensureBrowser()) return;
   const requests = getRentalRequests();
-  localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify([request, ...requests]));
+  localStorage.setItem(
+    RENTAL_REQUESTS_KEY,
+    JSON.stringify([request, ...requests]),
+  );
 };
 
 export const getRentalRequestsByAccount = (account: string): RentalRequest[] =>
   getRentalRequests().filter((request) => request.requesterAccount === account);
 
-export const updateRentalRequest = (id: string, updates: Partial<RentalRequest>): void => {
+export const updateRentalRequest = (
+  id: string,
+  updates: Partial<RentalRequest>,
+): void => {
   if (!ensureBrowser()) return;
   const requests = getRentalRequests();
   const idx = requests.findIndex((request) => request.id === id);
@@ -530,7 +565,10 @@ export const updateRentalRequest = (id: string, updates: Partial<RentalRequest>)
   localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(requests));
 };
 
-export const updateRental = (id: string, updates: Partial<RentalListing>): void => {
+export const updateRental = (
+  id: string,
+  updates: Partial<RentalListing>,
+): void => {
   if (!ensureBrowser()) return;
   const rentals = getRentals();
   const idx = rentals.findIndex((r) => r.id === id);
@@ -556,7 +594,10 @@ export const addRentalOrder = (order: RentalOrder): void => {
 export const getRentalOrdersByAccount = (account: string): RentalOrder[] =>
   getRentalOrders().filter((o) => o.renterAccount === account);
 
-export const updateRentalOrder = (id: string, updates: Partial<RentalOrder>): void => {
+export const updateRentalOrder = (
+  id: string,
+  updates: Partial<RentalOrder>,
+): void => {
   if (!ensureBrowser()) return;
   const orders = getRentalOrders();
   const idx = orders.findIndex((o) => o.id === id);
@@ -598,7 +639,11 @@ export const getStaleProducts = (account: string): Product[] => {
 
 /** Move a product into the mystery box pool */
 export const moveToMysteryBox = (productId: string): void => {
-  updateProduct(productId, { status: "mystery-box", inMysteryBox: true, mysteryBoxInvited: true });
+  updateProduct(productId, {
+    status: "mystery-box",
+    inMysteryBox: true,
+    mysteryBoxInvited: true,
+  });
 };
 
 /** Get all products currently in the mystery box pool */
@@ -606,7 +651,9 @@ export const getMysteryBoxProducts = (): Product[] =>
   getProducts().filter((p) => p.inMysteryBox && p.status === "mystery-box");
 
 /** Determine which tier a product belongs to based on its original price */
-export const getProductTier = (price: number): typeof MYSTERY_BOX_TIERS[number] | null => {
+export const getProductTier = (
+  price: number,
+): (typeof MYSTERY_BOX_TIERS)[number] | null => {
   for (const tier of MYSTERY_BOX_TIERS) {
     if (price <= tier.maxOriginalPrice) return tier;
   }
@@ -678,6 +725,7 @@ export const getMysteryBoxPurchases = (): MysteryBoxPurchase[] => {
   );
 };
 
-export const getMysteryBoxPurchasesByAccount = (account: string): MysteryBoxPurchase[] =>
+export const getMysteryBoxPurchasesByAccount = (
+  account: string,
+): MysteryBoxPurchase[] =>
   getMysteryBoxPurchases().filter((p) => p.buyerAccount === account);
-
