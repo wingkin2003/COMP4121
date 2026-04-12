@@ -6,6 +6,7 @@ import { AppNav } from "@/components/app-nav";
 import {
     getBuyOrdersByAccount,
     getProductsByAccount,
+    getRentalLendingsByAccount,
     getRentalRequestsByAccount,
     getRentalsByAccount,
     getRentalOrdersByAccount,
@@ -26,6 +27,7 @@ import {
     ProductCategory,
     ProductCondition,
     ProductStatus,
+    RentalLending,
     RentalListing,
     RentalRequest,
     RentalOrder,
@@ -67,6 +69,7 @@ export default function ProfilePage() {
     // Rental state
     const [rentals, setRentals] = useState<RentalListing[]>([]);
     const [rentalRequests, setRentalRequests] = useState<RentalRequest[]>([]);
+    const [rentalLendings, setRentalLendings] = useState<RentalLending[]>([]);
     const [rentalBookings, setRentalBookings] = useState<RentalOrder[]>([]);
     const [rentalBookingMsg, setRentalBookingMsg] = useState<string | null>(null);
     const [rentalRequestMsg, setRentalRequestMsg] = useState<string | null>(null);
@@ -95,6 +98,7 @@ export default function ProfilePage() {
             setBuyOrders(getBuyOrdersByAccount(user));
             setRentals(getRentalsByAccount(user));
             setRentalRequests(getRentalRequestsByAccount(user));
+            setRentalLendings(getRentalLendingsByAccount(user));
             setRentalBookings(getRentalOrdersByAccount(user));
             setStaleProducts(getStaleProducts(user));
             setMysteryPurchases(getMysteryBoxPurchasesByAccount(user));
@@ -122,6 +126,10 @@ export default function ProfilePage() {
 
     const refreshRentalBookings = () => {
         setRentalBookings(getRentalOrdersByAccount(account));
+    };
+
+    const refreshRentalLendings = () => {
+        setRentalLendings(getRentalLendingsByAccount(account));
     };
 
     const handleCancelBooking = (id: string) => {
@@ -817,6 +825,7 @@ export default function ProfilePage() {
                                 <tr>
                                     <th>Request</th>
                                     <th>Daily Budget</th>
+                                    <th>Deposit</th>
                                     <th>Duration</th>
                                     <th>Category</th>
                                     <th>Condition</th>
@@ -835,6 +844,7 @@ export default function ProfilePage() {
                                             </div>
                                         </td>
                                         <td>{formatHKD(request.dailyBudget)}/day</td>
+                                        <td>{formatHKD(request.deposit)}</td>
                                         <td>{request.minDays}–{request.maxDays} days</td>
                                         <td>{request.category}</td>
                                         <td>{request.condition}</td>
@@ -870,6 +880,57 @@ export default function ProfilePage() {
                                                 )}
                                             </div>
                                         </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ---- my rental lendings ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Rental Lending</h1>
+                    <p className="muted">{rentalLendings.length} offer{rentalLendings.length !== 1 ? "s" : ""}</p>
+                </div>
+
+                {rentalLendings.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not submitted any lending offers yet.</p>
+                        <Link href="/marketplace/rent/request" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Browse rent requests
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Request</th>
+                                    <th>Duration</th>
+                                    <th>Rental Fee</th>
+                                    <th>Deposit</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rentalLendings.map((entry) => (
+                                    <tr key={entry.id}>
+                                        <td>
+                                            <div>
+                                                <strong>{entry.requestTitle}</strong>
+                                                <div className="muted">{entry.location || "No location set"}</div>
+                                            </div>
+                                        </td>
+                                        <td>{entry.days} day{entry.days !== 1 ? "s" : ""}</td>
+                                        <td>{formatHKD(entry.rentalFee)}</td>
+                                        <td>{formatHKD(entry.deposit)}</td>
+                                        <td>{formatHKD(entry.total)}</td>
+                                        <td>
+                                            <span className="status-badge status-selling">Offered</span>
+                                        </td>
+                                        <td className="muted">{formatHKDate(entry.createdAt)}</td>
                                     </tr>
                                 ))}
                             </tbody>

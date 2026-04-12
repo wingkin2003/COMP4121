@@ -93,11 +93,17 @@ export function OrderPage({ mode }: OrderPageProps) {
         createdAt: new Date().toISOString(),
       });
     } else if (isRentRequest) {
+      const numDeposit = Number(deposit);
+      if (Number.isNaN(numDeposit) || numDeposit <= 0) {
+        setResult("Please provide a valid deposit amount.");
+        return;
+      }
       addRentalRequest({
         id: crypto.randomUUID(),
         title,
         description,
         dailyBudget: numericAmount,
+        deposit: numDeposit,
         minDays: Math.max(1, Number(minDays) || 1),
         maxDays: Math.max(1, Number(maxDays) || 7),
         category,
@@ -310,21 +316,21 @@ export function OrderPage({ mode }: OrderPageProps) {
 
             {isRent && (
               <>
-                {!isRentRequest ? (
-                  <label>
-                    Deposit (HKD)
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="e.g. 500"
-                      value={deposit}
-                      onChange={(event) => setDeposit(event.target.value)}
-                    />
-                    <span className="muted" style={{ fontSize: "0.8rem" }}>
-                      Refundable deposit to secure the item. Typically 20–50% of item value.
-                    </span>
-                  </label>
-                ) : null}
+                <label>
+                  Deposit (HKD)
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 500"
+                    value={deposit}
+                    onChange={(event) => setDeposit(event.target.value)}
+                  />
+                  <span className="muted" style={{ fontSize: "0.8rem" }}>
+                    {isRentRequest
+                      ? "Target refundable deposit expected by requester."
+                      : "Refundable deposit to secure the item. Typically 20–50% of item value."}
+                  </span>
+                </label>
                 <div className="sell-row">
                   <label>
                     Min rental days

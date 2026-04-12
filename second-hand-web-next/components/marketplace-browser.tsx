@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { AppNav } from "@/components/app-nav";
 import { getBuyOrders, getProducts, getRentalRequests, getRentals } from "@/lib/mvp-data";
@@ -32,6 +32,7 @@ const BUY_CATEGORY_OPTIONS: ProductCategory[] = PRODUCT_CATEGORIES;
 const BUY_CONDITION_OPTIONS: ProductCondition[] = PRODUCT_CONDITIONS;
 
 export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
+  const [hydrated, setHydrated] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"All" | ProductCategory>("All");
   const [condition, setCondition] = useState<"All" | ProductCondition>("All");
@@ -39,10 +40,18 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
   const [buySortBy, setBuySortBy] = useState<BuySortMode>("newest");
   const [rentSortBy, setRentSortBy] = useState<RentSortMode>("newest");
   const [rentRequestSortBy, setRentRequestSortBy] = useState<RentRequestSortMode>("newest");
-  const [products] = useState<Product[]>(() => getProducts());
-  const [orders] = useState<BuyOrder[]>(() => getBuyOrders());
-  const [rentals] = useState<RentalListing[]>(() => getRentals());
-  const [rentalRequests] = useState<RentalRequest[]>(() => getRentalRequests());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<BuyOrder[]>([]);
+  const [rentals, setRentals] = useState<RentalListing[]>([]);
+  const [rentalRequests, setRentalRequests] = useState<RentalRequest[]>([]);
+
+  useEffect(() => {
+    setProducts(getProducts());
+    setOrders(getBuyOrders());
+    setRentals(getRentals());
+    setRentalRequests(getRentalRequests());
+    setHydrated(true);
+  }, []);
 
   const sellFiltered = useMemo(() => {
     return [...products]
@@ -303,7 +312,11 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
           </div>
         </div>
 
-        {itemsEmpty ? (
+        {!hydrated ? (
+          <p className="muted" style={{ textAlign: "center", marginTop: "2rem" }}>
+            Loading marketplace...
+          </p>
+        ) : itemsEmpty ? (
           <p className="muted" style={{ textAlign: "center", marginTop: "2rem" }}>
             {isSell
               ? "No products matched your filters."
@@ -320,60 +333,61 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
             ))}
           </div>
         ) : isBuy ? (
-          <div className="request-grid">
+          <div className="grid-cards">
             {buyFiltered.map((order) => (
-              <article key={order.id} className="request-card">
-                <div className="request-card-top">
-                  <div>
-                    <h3>{order.title}</h3>
-                    <p className="muted">
-                      {order.category} · {order.condition}
-                    </p>
-                  </div>
-                  <span className="request-budget">{formatHKD(order.budget)}</span>
+              <Link
+                key={order.id}
+                href={`/marketplace/buy/${order.id}`}
+                className="product-card rental-card-link"
+              >
+                <div className="product-img-wrap">
+                  {order.image ? (
+                    <img src={order.image} alt={order.title} />
+                  ) : (
+                    <div className="product-thumb">{order.category}</div>
+                  )}
                 </div>
-                {order.image ? (
-                  <img src={order.image} alt={order.title} className="request-img" />
-                ) : (
-                  <p className="request-no-image">No reference image provided.</p>
-                )}
-                <p className="request-desc">{order.description}</p>
-                <div className="request-meta">
-                  <span>{order.location || "—"}</span>
-                  <span>{order.buyerName || "Anonymous"}</span>
-                  <span>{formatHKDate(order.createdAt)}</span>
+                <div className="product-info">
+                  <h3>{order.title}</h3>
+                  <p className="muted">
+                    {order.condition} · {order.location || "—"}
+                  </p>
+                  <p className="price">{formatHKD(order.budget)}</p>
+                  <span className="btn">View details</span>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         ) : isRentRequest ? (
-          <div className="request-grid">
+          <div className="grid-cards">
             {rentRequestFiltered.map((request) => (
-              <article key={request.id} className="request-card">
-                <div className="request-card-top">
-                  <div>
-                    <h3>{request.title}</h3>
-                    <p className="muted">
-                      {request.category} · {request.condition}
-                    </p>
+              <Link
+                key={request.id}
+                href={`/marketplace/rent/request/${request.id}`}
+                className="product-card rental-card rental-card-link"
+              >
+                <div className="product-img-wrap">
+                  {request.image ? (
+                    <img src={request.image} alt={request.title} />
+                  ) : (
+                    <div className="product-thumb">{request.category}</div>
+                  )}
+                  <span className="rental-badge">RENT REQUEST</span>
+                </div>
+                <div className="product-info">
+                  <h3>{request.title}</h3>
+                  <p className="muted">
+                    {request.category} · {request.condition}
+                  </p>
+                  <div className="rental-pricing">
+                    <span className="rental-daily">{formatHKD(request.dailyBudget)}<small>/day</small></span>
+                    <span className="muted">Deposit: {formatHKD(request.deposit)}</span>
                   </div>
-                  <span className="request-budget">{formatHKD(request.dailyBudget)} / day</span>
+                  <p className="muted" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                    {request.minDays}–{request.maxDays} days · {request.location || "—"}
+                  </p>
                 </div>
-                {request.image ? (
-                  <img src={request.image} alt={request.title} className="request-img" />
-                ) : (
-                  <p className="request-no-image">No reference image provided.</p>
-                )}
-                <p className="request-desc">{request.description}</p>
-                <div className="request-meta">
-                  <span>{request.location || "—"}</span>
-                  <span>{request.requesterName || "Anonymous"}</span>
-                  <span>
-                    {request.minDays}–{request.maxDays} days
-                  </span>
-                  <span>{formatHKDate(request.createdAt)}</span>
-                </div>
-              </article>
+              </Link>
             ))}
           </div>
         ) : (

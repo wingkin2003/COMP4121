@@ -73,6 +73,23 @@ export type BuyOrder = {
   createdAt: string;
 };
 
+export type BuyNegotiation = {
+  id: string;
+  buyOrderId: string;
+  buyOrderTitle: string;
+  mode: "negotiate" | "sales";
+  sellerAccount: string;
+  sellerName: string;
+  sellerPhone: string;
+  sellingItemTitle: string;
+  offeredPrice: number;
+  condition: ProductCondition;
+  meetupLocation: string;
+  note: string;
+  status: "submitted";
+  createdAt: string;
+};
+
 /* ---- Rental ---- */
 
 export type RentalStatus = "available" | "rented" | "returned" | "unpublished";
@@ -108,6 +125,7 @@ export type RentalRequest = {
   title: string;
   description: string;
   dailyBudget: number;
+  deposit: number;
   minDays: number;
   maxDays: number;
   category: ProductCategory;
@@ -134,6 +152,27 @@ export type RentalOrder = {
   endDate: string;
   rentalTitle: string;
   status: "active" | "returned" | "overdue" | "cancelled";
+  createdAt: string;
+};
+
+export type RentalLending = {
+  id: string;
+  requestId: string;
+  requestTitle: string;
+  lenderAccount: string;
+  lenderName: string;
+  lenderPhone: string;
+  note: string;
+  days: number;
+  rentalFee: number;
+  commission: number;
+  deposit: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+  pickupTime: string;
+  location: string;
+  status: "offered";
   createdAt: string;
 };
 

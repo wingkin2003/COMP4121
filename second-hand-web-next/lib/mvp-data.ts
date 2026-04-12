@@ -1,4 +1,5 @@
 import {
+  BuyNegotiation,
   BuyOrder,
   CartItem,
   MysteryBoxPurchase,
@@ -7,18 +8,21 @@ import {
   Order,
   Product,
   RentalListing,
+  RentalLending,
   RentalRequest,
   RentalOrder,
 } from "@/lib/mvp-types";
 
 const PRODUCTS_KEY = "secondlife-products";
 const BUY_ORDERS_KEY = "secondlife-buy-orders";
+const BUY_NEGOTIATIONS_KEY = "secondlife-buy-negotiations";
 const CART_KEY = "secondlife-cart";
 const ORDERS_KEY = "secondlife-orders";
 const LIKES_KEY = "secondlife-user-likes";
 const RENTALS_KEY = "secondlife-rentals";
 const RENTAL_REQUESTS_KEY = "secondlife-rental-requests";
 const RENTAL_ORDERS_KEY = "secondlife-rental-orders";
+const RENTAL_LENDINGS_KEY = "secondlife-rental-lendings";
 const MYSTERY_BOX_PURCHASES_KEY = "secondlife-mystery-box-purchases";
 
 const demoProducts: Product[] = [
@@ -203,6 +207,7 @@ const demoRentalRequests: RentalRequest[] = [
     description:
       "Looking to rent a portable projector for 2-3 days. HDMI input required and brightness should be suitable for classroom use.",
     dailyBudget: 120,
+    deposit: 300,
     minDays: 2,
     maxDays: 3,
     category: "Electronics",
@@ -220,6 +225,7 @@ const demoRentalRequests: RentalRequest[] = [
     description:
       "Need a clean and foldable stroller for an 8-day family visit. Prefer easy transport and safety belt included.",
     dailyBudget: 55,
+    deposit: 400,
     minDays: 7,
     maxDays: 10,
     category: "Other",
@@ -237,6 +243,7 @@ const demoRentalRequests: RentalRequest[] = [
     description:
       "Seeking a basic camping cookware set for a weekend trip. Pot, pan, and kettle preferred. Pick-up around New Territories.",
     dailyBudget: 40,
+    deposit: 150,
     minDays: 2,
     maxDays: 4,
     category: "Sports",
@@ -362,6 +369,17 @@ export const deleteBuyOrder = (id: string): void => {
   localStorage.setItem(BUY_ORDERS_KEY, JSON.stringify(buyOrders));
 };
 
+export const getBuyNegotiations = (): BuyNegotiation[] => {
+  if (!ensureBrowser()) return [];
+  return safeParse<BuyNegotiation[]>(localStorage.getItem(BUY_NEGOTIATIONS_KEY), []);
+};
+
+export const addBuyNegotiation = (entry: BuyNegotiation): void => {
+  if (!ensureBrowser()) return;
+  const existing = getBuyNegotiations();
+  localStorage.setItem(BUY_NEGOTIATIONS_KEY, JSON.stringify([entry, ...existing]));
+};
+
 export const getCart = (): CartItem[] => {
   if (!ensureBrowser()) return [];
   return safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
@@ -478,6 +496,19 @@ export const getRentalRequests = (): RentalRequest[] => {
     localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(demoRentalRequests));
     return demoRentalRequests;
   }
+
+  // migrate old requests: ensure deposit exists
+  let dirty = false;
+  for (const request of stored) {
+    if (request.deposit == null || Number.isNaN(Number(request.deposit))) {
+      request.deposit = Math.max(0, request.dailyBudget || 0);
+      dirty = true;
+    }
+  }
+  if (dirty) {
+    localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(stored));
+  }
+
   return stored;
 };
 
@@ -533,6 +564,20 @@ export const updateRentalOrder = (id: string, updates: Partial<RentalOrder>): vo
   orders[idx] = { ...orders[idx], ...updates };
   localStorage.setItem(RENTAL_ORDERS_KEY, JSON.stringify(orders));
 };
+
+export const getRentalLendings = (): RentalLending[] => {
+  if (!ensureBrowser()) return [];
+  return safeParse<RentalLending[]>(localStorage.getItem(RENTAL_LENDINGS_KEY), []);
+};
+
+export const addRentalLending = (lending: RentalLending): void => {
+  if (!ensureBrowser()) return;
+  const lendings = getRentalLendings();
+  localStorage.setItem(RENTAL_LENDINGS_KEY, JSON.stringify([lending, ...lendings]));
+};
+
+export const getRentalLendingsByAccount = (account: string): RentalLending[] =>
+  getRentalLendings().filter((entry) => entry.lenderAccount === account);
 
 /* ---- Mystery Box ---- */
 

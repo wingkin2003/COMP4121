@@ -855,6 +855,16 @@ body:has(.page-shell) {
   gap: 0.8rem;
 }
 
+.request-card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s;
+}
+
+.request-card-link:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
 .request-card-top {
   display: flex;
   justify-content: space-between;
