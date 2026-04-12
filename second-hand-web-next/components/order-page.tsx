@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addBuyOrder, addProduct, addRental, getCurrentAccount } from "@/lib/mvp-data";
+import { addBuyOrder, addProduct, addRental, addRentalRequest, getCurrentAccount } from "@/lib/mvp-data";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -11,7 +11,7 @@ import {
   ProductCondition,
 } from "@/lib/mvp-types";
 
-type OrderMode = "sell" | "buy" | "rent";
+type OrderMode = "sell" | "buy" | "rent" | "rent-request";
 
 type OrderPageProps = {
   mode: OrderMode;
@@ -20,7 +20,8 @@ type OrderPageProps = {
 export function OrderPage({ mode }: OrderPageProps) {
   const isSell = mode === "sell";
   const isBuy = mode === "buy";
-  const isRent = mode === "rent";
+  const isRent = mode === "rent" || mode === "rent-request";
+  const isRentRequest = mode === "rent-request";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -67,7 +68,7 @@ export function OrderPage({ mode }: OrderPageProps) {
       return;
     }
 
-    if (isRent) {
+    if (isRent && !isRentRequest) {
       const numDeposit = Number(deposit);
       if (Number.isNaN(numDeposit) || numDeposit <= 0) {
         setResult("Please provide a valid deposit amount.");
@@ -89,6 +90,23 @@ export function OrderPage({ mode }: OrderPageProps) {
         ownerAccount: getCurrentAccount(),
         status: "available",
         likes: 0,
+        createdAt: new Date().toISOString(),
+      });
+    } else if (isRentRequest) {
+      addRentalRequest({
+        id: crypto.randomUUID(),
+        title,
+        description,
+        dailyBudget: numericAmount,
+        minDays: Math.max(1, Number(minDays) || 1),
+        maxDays: Math.max(1, Number(maxDays) || 7),
+        category,
+        condition,
+        image: imagePreview || "",
+        location,
+        requesterName: displayName,
+        requesterAccount: getCurrentAccount(),
+        status: "open",
         createdAt: new Date().toISOString(),
       });
     } else if (isSell) {
@@ -139,6 +157,8 @@ export function OrderPage({ mode }: OrderPageProps) {
         ? "Listing created! Redirecting..."
         : isBuy
         ? "Buy request created! Redirecting..."
+        : isRentRequest
+        ? "Rent request created! Redirecting..."
         : "Rental listing created! Redirecting...",
     );
 
@@ -147,6 +167,8 @@ export function OrderPage({ mode }: OrderPageProps) {
         ? "/marketplace/sell"
         : isBuy
         ? "/marketplace/buy"
+        : isRentRequest
+        ? "/marketplace/rent/request"
         : "/marketplace/rent";
     }, 1500);
   };
@@ -161,6 +183,8 @@ export function OrderPage({ mode }: OrderPageProps) {
               ? "Create listing"
               : isBuy
               ? "Post buy request"
+              : isRentRequest
+              ? "Post rent request"
               : "Create rental listing"}
           </h1>
           <p className="muted">
@@ -168,6 +192,8 @@ export function OrderPage({ mode }: OrderPageProps) {
               ? "Post a second-hand item and start earning."
               : isBuy
               ? "Tell sellers what you want and your target budget."
+              : isRentRequest
+              ? "Post what you need to rent and your daily budget target."
               : "List an item for short-term rental and earn while it's not in use."}
           </p>
           <div className="order-tabs">
@@ -199,12 +225,30 @@ export function OrderPage({ mode }: OrderPageProps) {
               Mystery Box
             </Link>
           </div>
+          {isRent ? (
+            <div className="order-tabs" style={{ marginTop: "0.6rem" }}>
+              <Link
+                href="/order/rent"
+                className={`order-tab${!isRentRequest ? " active" : ""}`}
+                aria-current={!isRentRequest ? "page" : undefined}
+              >
+                Listing
+              </Link>
+              <Link
+                href="/order/rent/request"
+                className={`order-tab${isRentRequest ? " active" : ""}`}
+                aria-current={isRentRequest ? "page" : undefined}
+              >
+                Request
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         <div className="content-card">
           <form className="sell-form" onSubmit={handleSubmit}>
             <label>
-              {isSell ? "Title" : isBuy ? "Request title" : "Rental item title"}
+              {isSell ? "Title" : isBuy || isRentRequest ? "Request title" : "Rental item title"}
               <input
                 type="text"
                 placeholder={
@@ -212,6 +256,8 @@ export function OrderPage({ mode }: OrderPageProps) {
                     ? "e.g. iPhone 14 Pro"
                     : isBuy
                     ? "e.g. Looking for a used iPad"
+                    : isRentRequest
+                    ? "e.g. Looking for DSLR camera rental"
                     : "e.g. Sony Camera for weekend rental"
                 }
                 value={title}
@@ -220,13 +266,15 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Description" : isBuy ? "Details" : "Description"}
+              {isSell ? "Description" : isBuy || isRentRequest ? "Details" : "Description"}
               <textarea
                 placeholder={
                   isSell
                     ? "Describe your item..."
                     : isBuy
                     ? "Describe the item you want..."
+                    : isRentRequest
+                    ? "Describe what you need, required features, expected timeline..."
                     : "Describe the rental item, what's included, condition notes..."
                 }
                 value={description}
@@ -236,7 +284,7 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Product photo" : isBuy ? "Reference image (optional)" : "Item photo"}
+              {isSell ? "Product photo" : isBuy || isRentRequest ? "Reference image (optional)" : "Item photo"}
               <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} />
             </label>
 
@@ -250,7 +298,7 @@ export function OrderPage({ mode }: OrderPageProps) {
             )}
 
             <label>
-              {isSell ? "Price (HKD)" : isBuy ? "Budget (HKD)" : "Daily rental price (HKD)"}
+              {isSell ? "Price (HKD)" : isBuy ? "Budget (HKD)" : isRentRequest ? "Daily budget (HKD)" : "Daily rental price (HKD)"}
               <input
                 type="number"
                 min={1}
@@ -262,19 +310,21 @@ export function OrderPage({ mode }: OrderPageProps) {
 
             {isRent && (
               <>
-                <label>
-                  Deposit (HKD)
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="e.g. 500"
-                    value={deposit}
-                    onChange={(event) => setDeposit(event.target.value)}
-                  />
-                  <span className="muted" style={{ fontSize: "0.8rem" }}>
-                    Refundable deposit to secure the item. Typically 20–50% of item value.
-                  </span>
-                </label>
+                {!isRentRequest ? (
+                  <label>
+                    Deposit (HKD)
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="e.g. 500"
+                      value={deposit}
+                      onChange={(event) => setDeposit(event.target.value)}
+                    />
+                    <span className="muted" style={{ fontSize: "0.8rem" }}>
+                      Refundable deposit to secure the item. Typically 20–50% of item value.
+                    </span>
+                  </label>
+                ) : null}
                 <div className="sell-row">
                   <label>
                     Min rental days
@@ -328,7 +378,7 @@ export function OrderPage({ mode }: OrderPageProps) {
             </div>
 
             <label>
-              {isSell ? "Pickup location" : isBuy ? "Preferred location" : "Pickup / return location"}
+              {isSell ? "Pickup location" : isBuy || isRentRequest ? "Preferred location" : "Pickup / return location"}
               <input
                 type="text"
                 placeholder="e.g. Mong Kok"
@@ -338,7 +388,7 @@ export function OrderPage({ mode }: OrderPageProps) {
             </label>
 
             <label>
-              {isSell ? "Seller name" : isBuy ? "Buyer name" : "Owner name"}
+              {isSell ? "Seller name" : isBuy ? "Buyer name" : isRentRequest ? "Requester name" : "Owner name"}
               <input
                 type="text"
                 placeholder="Your name"
@@ -352,6 +402,8 @@ export function OrderPage({ mode }: OrderPageProps) {
                 ? "Publish listing"
                 : isBuy
                 ? "Publish buy request"
+                : isRentRequest
+                ? "Publish rent request"
                 : "Publish rental listing"}
             </button>
             {result && <p className="detail-msg">{result}</p>}

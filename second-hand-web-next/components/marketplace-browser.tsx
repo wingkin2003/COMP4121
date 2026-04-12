@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { AppNav } from "@/components/app-nav";
-import { getBuyOrders, getProducts, getRentals } from "@/lib/mvp-data";
+import { getBuyOrders, getProducts, getRentalRequests, getRentals } from "@/lib/mvp-data";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import {
   PRODUCT_CATEGORIES,
@@ -14,9 +14,10 @@ import {
   ProductCategory,
   ProductCondition,
   RentalListing,
+  RentalRequest,
 } from "@/lib/mvp-types";
 
-type MarketplaceMode = "sell" | "buy" | "rent";
+type MarketplaceMode = "sell" | "buy" | "rent" | "rent-request";
 
 type MarketplaceBrowserProps = {
   mode: MarketplaceMode;
@@ -25,6 +26,7 @@ type MarketplaceBrowserProps = {
 type SellSortMode = "newest" | "oldest" | "price-asc" | "price-desc";
 type BuySortMode = "newest" | "oldest" | "budget-asc" | "budget-desc";
 type RentSortMode = "newest" | "oldest" | "daily-asc" | "daily-desc";
+type RentRequestSortMode = "newest" | "oldest" | "budget-asc" | "budget-desc";
 
 const BUY_CATEGORY_OPTIONS: ProductCategory[] = PRODUCT_CATEGORIES;
 const BUY_CONDITION_OPTIONS: ProductCondition[] = PRODUCT_CONDITIONS;
@@ -36,9 +38,11 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
   const [sellSortBy, setSellSortBy] = useState<SellSortMode>("newest");
   const [buySortBy, setBuySortBy] = useState<BuySortMode>("newest");
   const [rentSortBy, setRentSortBy] = useState<RentSortMode>("newest");
+  const [rentRequestSortBy, setRentRequestSortBy] = useState<RentRequestSortMode>("newest");
   const [products] = useState<Product[]>(() => getProducts());
   const [orders] = useState<BuyOrder[]>(() => getBuyOrders());
   const [rentals] = useState<RentalListing[]>(() => getRentals());
+  const [rentalRequests] = useState<RentalRequest[]>(() => getRentalRequests());
 
   const sellFiltered = useMemo(() => {
     return [...products]
@@ -118,13 +122,42 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
       });
   }, [rentals, query, category, condition, rentSortBy]);
 
+  const rentRequestFiltered = useMemo(() => {
+    return [...rentalRequests]
+      .filter((request) => request.status === "open")
+      .filter((request) =>
+        request.title.toLowerCase().includes(query.trim().toLowerCase()),
+      )
+      .filter((request) =>
+        category === "All" ? true : request.category === category,
+      )
+      .filter((request) =>
+        condition === "All" ? true : request.condition === condition,
+      )
+      .sort((a, b) => {
+        if (rentRequestSortBy === "newest") {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        if (rentRequestSortBy === "oldest") {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+        if (rentRequestSortBy === "budget-asc") {
+          return a.dailyBudget - b.dailyBudget;
+        }
+        return b.dailyBudget - a.dailyBudget;
+      });
+  }, [rentalRequests, query, category, condition, rentRequestSortBy]);
+
   const isSell = mode === "sell";
   const isBuy = mode === "buy";
-  const isRent = mode === "rent";
+  const isRent = mode === "rent" || mode === "rent-request";
+  const isRentRequest = mode === "rent-request";
   const itemsEmpty = isSell
     ? sellFiltered.length === 0
     : isBuy
     ? buyFiltered.length === 0
+    : isRentRequest
+    ? rentRequestFiltered.length === 0
     : rentFiltered.length === 0;
 
   return (
@@ -138,6 +171,8 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
               ? "Discover second-hand listings across Hong Kong."
               : isBuy
               ? "Browse buy requests posted by customers."
+              : isRentRequest
+              ? "Browse rent requests posted by customers."
               : "Rent items for short-term use — save money, reduce waste."}
           </p>
           <div className="marketplace-tabs">
@@ -163,6 +198,24 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
               Rent
             </Link>
           </div>
+          {isRent ? (
+            <div className="marketplace-tabs" style={{ marginTop: "0.6rem" }}>
+              <Link
+                href="/marketplace/rent"
+                className={`marketplace-tab${!isRentRequest ? " active" : ""}`}
+                aria-current={!isRentRequest ? "page" : undefined}
+              >
+                Listings
+              </Link>
+              <Link
+                href="/marketplace/rent/request"
+                className={`marketplace-tab${isRentRequest ? " active" : ""}`}
+                aria-current={isRentRequest ? "page" : undefined}
+              >
+                Requests
+              </Link>
+            </div>
+          ) : null}
           <div className="filters">
             <input
               type="search"
@@ -171,6 +224,8 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                   ? "Search by title..."
                   : isBuy
                   ? "Search by request title..."
+                  : isRentRequest
+                  ? "Search by rent request title..."
                   : "Search rentals..."
               }
               value={query}
@@ -222,6 +277,18 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                 <option value="budget-asc">Budget low to high</option>
                 <option value="budget-desc">Budget high to low</option>
               </select>
+            ) : isRentRequest ? (
+              <select
+                value={rentRequestSortBy}
+                onChange={(event) =>
+                  setRentRequestSortBy(event.target.value as RentRequestSortMode)
+                }
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="budget-asc">Budget low to high</option>
+                <option value="budget-desc">Budget high to low</option>
+              </select>
             ) : (
               <select
                 value={rentSortBy}
@@ -242,6 +309,8 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
               ? "No products matched your filters."
               : isBuy
               ? "No buy requests matched your filters."
+              : isRentRequest
+              ? "No rent requests matched your filters."
               : "No rental listings matched your filters."}
           </p>
         ) : isSell ? (
@@ -273,6 +342,36 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                   <span>{order.location || "—"}</span>
                   <span>{order.buyerName || "Anonymous"}</span>
                   <span>{formatHKDate(order.createdAt)}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : isRentRequest ? (
+          <div className="request-grid">
+            {rentRequestFiltered.map((request) => (
+              <article key={request.id} className="request-card">
+                <div className="request-card-top">
+                  <div>
+                    <h3>{request.title}</h3>
+                    <p className="muted">
+                      {request.category} · {request.condition}
+                    </p>
+                  </div>
+                  <span className="request-budget">{formatHKD(request.dailyBudget)} / day</span>
+                </div>
+                {request.image ? (
+                  <img src={request.image} alt={request.title} className="request-img" />
+                ) : (
+                  <p className="request-no-image">No reference image provided.</p>
+                )}
+                <p className="request-desc">{request.description}</p>
+                <div className="request-meta">
+                  <span>{request.location || "—"}</span>
+                  <span>{request.requesterName || "Anonymous"}</span>
+                  <span>
+                    {request.minDays}–{request.maxDays} days
+                  </span>
+                  <span>{formatHKDate(request.createdAt)}</span>
                 </div>
               </article>
             ))}

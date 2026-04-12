@@ -7,6 +7,7 @@ import {
   Order,
   Product,
   RentalListing,
+  RentalRequest,
   RentalOrder,
 } from "@/lib/mvp-types";
 
@@ -16,6 +17,7 @@ const CART_KEY = "secondlife-cart";
 const ORDERS_KEY = "secondlife-orders";
 const LIKES_KEY = "secondlife-user-likes";
 const RENTALS_KEY = "secondlife-rentals";
+const RENTAL_REQUESTS_KEY = "secondlife-rental-requests";
 const RENTAL_ORDERS_KEY = "secondlife-rental-orders";
 const MYSTERY_BOX_PURCHASES_KEY = "secondlife-mystery-box-purchases";
 
@@ -191,6 +193,60 @@ const demoRentals: RentalListing[] = [
     status: "available",
     likes: 2,
     createdAt: "2026-04-02T09:30:00.000Z",
+  },
+];
+
+const demoRentalRequests: RentalRequest[] = [
+  {
+    id: "rr1",
+    title: "Need a projector for class presentation",
+    description:
+      "Looking to rent a portable projector for 2-3 days. HDMI input required and brightness should be suitable for classroom use.",
+    dailyBudget: 120,
+    minDays: 2,
+    maxDays: 3,
+    category: "Electronics",
+    condition: "Good",
+    image: "/window.svg",
+    location: "Kowloon Tong",
+    requesterName: "Chloe Ng",
+    requesterAccount: "chloeng",
+    status: "open",
+    createdAt: "2026-04-05T10:20:00.000Z",
+  },
+  {
+    id: "rr2",
+    title: "Looking for baby stroller rental",
+    description:
+      "Need a clean and foldable stroller for an 8-day family visit. Prefer easy transport and safety belt included.",
+    dailyBudget: 55,
+    minDays: 7,
+    maxDays: 10,
+    category: "Other",
+    condition: "Like New",
+    image: "",
+    location: "Tseung Kwan O",
+    requesterName: "Ivy Cheung",
+    requesterAccount: "ivycheung",
+    status: "open",
+    createdAt: "2026-04-08T16:45:00.000Z",
+  },
+  {
+    id: "rr3",
+    title: "Renting camping cookware set",
+    description:
+      "Seeking a basic camping cookware set for a weekend trip. Pot, pan, and kettle preferred. Pick-up around New Territories.",
+    dailyBudget: 40,
+    minDays: 2,
+    maxDays: 4,
+    category: "Sports",
+    condition: "Fair",
+    image: "",
+    location: "Tai Wai",
+    requesterName: "Ryan Lau",
+    requesterAccount: "ryanlau",
+    status: "open",
+    createdAt: "2026-04-10T08:10:00.000Z",
   },
 ];
 
@@ -413,6 +469,34 @@ export const addRental = (rental: RentalListing): void => {
   if (!ensureBrowser()) return;
   const rentals = getRentals();
   localStorage.setItem(RENTALS_KEY, JSON.stringify([rental, ...rentals]));
+};
+
+export const getRentalRequests = (): RentalRequest[] => {
+  if (!ensureBrowser()) return demoRentalRequests;
+  const stored = safeParse<RentalRequest[]>(localStorage.getItem(RENTAL_REQUESTS_KEY), []);
+  if (stored.length === 0) {
+    localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(demoRentalRequests));
+    return demoRentalRequests;
+  }
+  return stored;
+};
+
+export const addRentalRequest = (request: RentalRequest): void => {
+  if (!ensureBrowser()) return;
+  const requests = getRentalRequests();
+  localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify([request, ...requests]));
+};
+
+export const getRentalRequestsByAccount = (account: string): RentalRequest[] =>
+  getRentalRequests().filter((request) => request.requesterAccount === account);
+
+export const updateRentalRequest = (id: string, updates: Partial<RentalRequest>): void => {
+  if (!ensureBrowser()) return;
+  const requests = getRentalRequests();
+  const idx = requests.findIndex((request) => request.id === id);
+  if (idx === -1) return;
+  requests[idx] = { ...requests[idx], ...updates };
+  localStorage.setItem(RENTAL_REQUESTS_KEY, JSON.stringify(requests));
 };
 
 export const updateRental = (id: string, updates: Partial<RentalListing>): void => {

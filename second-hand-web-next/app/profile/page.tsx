@@ -6,6 +6,7 @@ import { AppNav } from "@/components/app-nav";
 import {
     getBuyOrdersByAccount,
     getProductsByAccount,
+    getRentalRequestsByAccount,
     getRentalsByAccount,
     getRentalOrdersByAccount,
     getStaleProducts,
@@ -13,6 +14,7 @@ import {
     updateBuyOrder,
     updateProduct,
     updateRental,
+    updateRentalRequest,
     updateRentalOrder,
     moveToMysteryBox,
     getCurrentAccount,
@@ -25,6 +27,7 @@ import {
     ProductCondition,
     ProductStatus,
     RentalListing,
+    RentalRequest,
     RentalOrder,
     RentalStatus,
     MysteryBoxPurchase,
@@ -63,8 +66,10 @@ export default function ProfilePage() {
 
     // Rental state
     const [rentals, setRentals] = useState<RentalListing[]>([]);
+    const [rentalRequests, setRentalRequests] = useState<RentalRequest[]>([]);
     const [rentalBookings, setRentalBookings] = useState<RentalOrder[]>([]);
     const [rentalBookingMsg, setRentalBookingMsg] = useState<string | null>(null);
+    const [rentalRequestMsg, setRentalRequestMsg] = useState<string | null>(null);
 
     // Mystery box state
     const [staleProducts, setStaleProducts] = useState<Product[]>([]);
@@ -89,6 +94,7 @@ export default function ProfilePage() {
             setProducts(getProductsByAccount(user));
             setBuyOrders(getBuyOrdersByAccount(user));
             setRentals(getRentalsByAccount(user));
+            setRentalRequests(getRentalRequestsByAccount(user));
             setRentalBookings(getRentalOrdersByAccount(user));
             setStaleProducts(getStaleProducts(user));
             setMysteryPurchases(getMysteryBoxPurchasesByAccount(user));
@@ -108,6 +114,10 @@ export default function ProfilePage() {
 
     const refreshRentals = () => {
         setRentals(getRentalsByAccount(account));
+    };
+
+    const refreshRentalRequests = () => {
+        setRentalRequests(getRentalRequestsByAccount(account));
     };
 
     const refreshRentalBookings = () => {
@@ -134,6 +144,44 @@ export default function ProfilePage() {
     const handleRentalUnpublish = (id: string) => {
         updateRental(id, { status: "unpublished" });
         refreshRentals();
+    };
+
+    const handleRentalRequestStatusChange = (id: string, status: RentalRequest["status"]) => {
+        updateRentalRequest(id, { status });
+        refreshRentalRequests();
+    };
+
+    const handleRentalRequestUnpublish = (id: string) => {
+        updateRentalRequest(id, { status: "closed" });
+        refreshRentalRequests();
+        setRentalRequestMsg("Rent request unpublished.");
+        setTimeout(() => setRentalRequestMsg(null), 2000);
+    };
+
+    const rentalRequestStatusLabel = (status: RentalRequest["status"]) => {
+        switch (status) {
+            case "open":
+                return "Open";
+            case "matched":
+                return "Matched";
+            case "closed":
+                return "Closed";
+            default:
+                return status;
+        }
+    };
+
+    const rentalRequestStatusClass = (status: RentalRequest["status"]) => {
+        switch (status) {
+            case "open":
+                return "status-selling";
+            case "matched":
+                return "status-sold";
+            case "closed":
+                return "status-unpublished";
+            default:
+                return "";
+        }
     };
 
     const handleMoveToMysteryBox = (productId: string) => {
@@ -736,6 +784,87 @@ export default function ProfilePage() {
                                                 </select>
                                                 {r.status !== "unpublished" && (
                                                     <button className="btn btn-danger-sm" onClick={() => handleRentalUnpublish(r.id)}>
+                                                        Unpublish
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ---- my rent requests ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Rent Requests</h1>
+                    <p className="muted">{rentalRequests.length} request{rentalRequests.length !== 1 ? "s" : ""}</p>
+                </div>
+
+                {rentalRequests.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not posted any rent requests yet.</p>
+                        <Link href="/order/rent/request" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Post rent request
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        {rentalRequestMsg && <p className="detail-msg">{rentalRequestMsg}</p>}
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Request</th>
+                                    <th>Daily Budget</th>
+                                    <th>Duration</th>
+                                    <th>Category</th>
+                                    <th>Condition</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rentalRequests.map((request) => (
+                                    <tr key={request.id}>
+                                        <td>
+                                            <div>
+                                                <strong>{request.title}</strong>
+                                                <div className="muted">{request.location || "No location set"}</div>
+                                            </div>
+                                        </td>
+                                        <td>{formatHKD(request.dailyBudget)}/day</td>
+                                        <td>{request.minDays}–{request.maxDays} days</td>
+                                        <td>{request.category}</td>
+                                        <td>{request.condition}</td>
+                                        <td>
+                                            <span className={`status-badge ${rentalRequestStatusClass(request.status)}`}>
+                                                {rentalRequestStatusLabel(request.status)}
+                                            </span>
+                                        </td>
+                                        <td className="muted">{formatHKDate(request.createdAt)}</td>
+                                        <td>
+                                            <div className="listing-actions">
+                                                <select
+                                                    value={request.status}
+                                                    onChange={(event) =>
+                                                        handleRentalRequestStatusChange(
+                                                            request.id,
+                                                            event.target.value as RentalRequest["status"],
+                                                        )
+                                                    }
+                                                    className="status-select"
+                                                >
+                                                    <option value="open">Open</option>
+                                                    <option value="matched">Matched</option>
+                                                    <option value="closed">Closed</option>
+                                                </select>
+                                                {request.status !== "closed" && (
+                                                    <button
+                                                        className="btn btn-danger-sm"
+                                                        onClick={() => handleRentalRequestUnpublish(request.id)}
+                                                    >
                                                         Unpublish
                                                     </button>
                                                 )}

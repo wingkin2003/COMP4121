@@ -103,6 +103,23 @@ export type RentalListing = {
   createdAt: string;
 };
 
+export type RentalRequest = {
+  id: string;
+  title: string;
+  description: string;
+  dailyBudget: number;
+  minDays: number;
+  maxDays: number;
+  category: ProductCategory;
+  condition: ProductCondition;
+  image: string;
+  location: string;
+  requesterName: string;
+  requesterAccount: string;
+  status: "open" | "matched" | "closed";
+  createdAt: string;
+};
+
 export type RentalOrder = {
   id: string;
   rentalId: string;
