@@ -1389,6 +1389,7 @@ body:has(.page-shell) {
 .rental-card {
   position: relative;
 }
+
 .rental-badge {
   position: absolute;
   top: 0.5rem;
@@ -1402,6 +1403,7 @@ body:has(.page-shell) {
   border-radius: 4px;
   text-transform: uppercase;
 }
+
 .rental-desc {
   font-size: 0.82rem;
   color: var(--text-muted);
@@ -1411,22 +1413,26 @@ body:has(.page-shell) {
   overflow: hidden;
   margin: 0.3rem 0;
 }
+
 .rental-pricing {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   margin-top: 0.5rem;
 }
+
 .rental-daily {
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--accent);
 }
+
 .rental-daily small {
   font-weight: 400;
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
 .rental-meta {
   display: flex;
   justify-content: space-between;
@@ -1444,6 +1450,7 @@ body:has(.page-shell) {
   gap: 1.2rem;
   margin-top: 1.5rem;
 }
+
 .mystery-tier-card {
   background: var(--card);
   border: 2px solid var(--border);
@@ -1452,14 +1459,17 @@ body:has(.page-shell) {
   text-align: center;
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
+
 .mystery-tier-card:hover:not(.empty) {
   border-color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
 }
+
 .mystery-tier-card.empty {
   opacity: 0.5;
 }
+
 .mystery-tier-icon {
   display: flex;
   align-items: center;
@@ -1467,21 +1477,25 @@ body:has(.page-shell) {
   color: var(--accent);
   margin-bottom: 0.5rem;
 }
+
 .mystery-tier-card h2 {
   font-size: 1.2rem;
   margin: 0 0 0.3rem;
 }
+
 .mystery-tier-price {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--accent);
   margin: 0.3rem 0;
 }
+
 .mystery-tier-stock {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin: 0.5rem 0 1rem;
 }
+
 .mystery-tier-card .btn {
   width: 100%;
 }
@@ -1497,6 +1511,7 @@ body:has(.page-shell) {
   align-items: center;
   justify-content: center;
 }
+
 .mystery-reveal-card {
   background: var(--card);
   border-radius: 16px;
@@ -1506,60 +1521,96 @@ body:has(.page-shell) {
   text-align: center;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
 }
+
 .mystery-opening {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
 }
+
 .mystery-box-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--accent);
 }
+
 .mystery-box-icon.spin {
   animation: mysteryBoxSpin 1s ease-in-out infinite;
 }
+
 .mystery-box-icon.bounce {
   animation: mysteryBoxBounce 0.6s ease-out;
 }
+
 @keyframes mysteryBoxSpin {
-  0% { transform: rotate(0) scale(1); }
-  25% { transform: rotate(-15deg) scale(1.1); }
-  50% { transform: rotate(15deg) scale(1.1); }
-  75% { transform: rotate(-10deg) scale(1.05); }
-  100% { transform: rotate(0) scale(1); }
+  0% {
+    transform: rotate(0) scale(1);
+  }
+
+  25% {
+    transform: rotate(-15deg) scale(1.1);
+  }
+
+  50% {
+    transform: rotate(15deg) scale(1.1);
+  }
+
+  75% {
+    transform: rotate(-10deg) scale(1.05);
+  }
+
+  100% {
+    transform: rotate(0) scale(1);
+  }
 }
+
 @keyframes mysteryBoxBounce {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
+
 .mystery-result h2 {
   font-size: 1.2rem;
   color: var(--text-muted);
   margin: 0.5rem 0;
 }
+
 .mystery-result h3 {
   font-size: 1.5rem;
   margin: 0 0 1rem;
 }
+
 .mystery-result-details {
   text-align: left;
   background: var(--bg);
   border-radius: 8px;
   padding: 1rem;
 }
+
 .mystery-result-details p {
   margin: 0.3rem 0;
 }
+
 .mystery-savings {
   color: #22c55e;
   font-weight: 700;
   font-size: 1.1rem;
   margin-top: 0.5rem !important;
 }
+
 .mystery-savings-cell {
   color: #22c55e;
   font-weight: 600;
@@ -1571,11 +1622,13 @@ body:has(.page-shell) {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.2rem;
 }
+
 .mystery-step {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
 }
+
 .mystery-step-num {
   display: flex;
   align-items: center;
@@ -1589,6 +1642,7 @@ body:has(.page-shell) {
   font-size: 0.9rem;
   flex-shrink: 0;
 }
+
 .mystery-step p {
   margin: 0.2rem 0 0;
 }
@@ -1604,12 +1658,15 @@ body:has(.page-shell) {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.8rem;
   }
+
   .mystery-tier-card {
     padding: 1rem;
   }
+
   .mystery-reveal-card {
     padding: 1.5rem;
   }
+
   .mystery-how {
     grid-template-columns: 1fr;
   }
@@ -1623,9 +1680,11 @@ body:has(.page-shell) {
   color: inherit;
   cursor: pointer;
 }
+
 .rental-card-link:hover {
   border-color: var(--accent);
 }
+
 /* ---- Rental Detail (rd-*) ---- */
 .rd-type-badge {
   display: inline-block;
@@ -1640,11 +1699,13 @@ body:has(.page-shell) {
   text-transform: uppercase;
   margin-bottom: 0.2rem;
 }
+
 .rd-price-unit {
   font-size: 0.85rem;
   color: var(--text-muted);
   font-weight: 400;
 }
+
 .rd-check-icon {
   width: 48px;
   height: 48px;
@@ -1667,16 +1728,19 @@ body:has(.page-shell) {
   border: 1px solid #e8e8e8;
   border-radius: 10px;
 }
+
 .rd-timeline-item {
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
   font-size: 0.85rem;
 }
-.rd-timeline-item > div {
+
+.rd-timeline-item>div {
   display: flex;
   flex-direction: column;
 }
+
 .rd-timeline-icon {
   width: 30px;
   height: 30px;
@@ -1689,6 +1753,7 @@ body:has(.page-shell) {
   flex-shrink: 0;
   color: #7f9a7a;
 }
+
 .rd-timeline-label {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -1696,6 +1761,7 @@ body:has(.page-shell) {
   color: #999;
   font-weight: 600;
 }
+
 .rd-timeline-line {
   width: 2px;
   height: 14px;
@@ -1707,6 +1773,7 @@ body:has(.page-shell) {
 .rd-form-section {
   margin-bottom: 1.5rem;
 }
+
 .rd-form-heading {
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -1717,6 +1784,7 @@ body:has(.page-shell) {
   padding-bottom: 0.3rem;
   border-bottom: 1px solid #f0f0f0;
 }
+
 .rd-error {
   color: #e74c3c;
   font-size: 0.88rem;

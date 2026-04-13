@@ -3,5 +3,5 @@
 import { MarketplaceBrowser } from "@/components/marketplace-browser";
 
 export default function MarketplaceRentPage() {
-  return <MarketplaceBrowser mode="rent" />;
+    return <MarketplaceBrowser mode="rent" />;
 }

@@ -980,15 +980,14 @@ export default function ProfilePage() {
                                         <td>{formatHKD(b.deposit)}</td>
                                         <td>{formatHKD(b.total)}</td>
                                         <td>
-                                            <span className={`status-badge ${
-                                                b.status === "active" ? "status-selling" :
-                                                b.status === "returned" ? "status-expired" :
-                                                b.status === "cancelled" ? "status-unpublished" :
-                                                "status-sold"
-                                            }`}>
+                                            <span className={`status-badge ${b.status === "active" ? "status-selling" :
+                                                    b.status === "returned" ? "status-expired" :
+                                                        b.status === "cancelled" ? "status-unpublished" :
+                                                            "status-sold"
+                                                }`}>
                                                 {b.status === "active" ? "Active" :
-                                                 b.status === "returned" ? "Returned" :
-                                                 b.status === "cancelled" ? "Cancelled" : "Overdue"}
+                                                    b.status === "returned" ? "Returned" :
+                                                        b.status === "cancelled" ? "Cancelled" : "Overdue"}
                                             </span>
                                         </td>
                                         <td className="muted">{formatHKDate(b.createdAt)}</td>
