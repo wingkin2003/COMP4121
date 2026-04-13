@@ -7,6 +7,7 @@ const links = [
   { href: "/marketplace/sell", label: "Marketplace" },
   { href: "/order/sell", label: "Order" },
   { href: "/mystery-box", label: "Mystery Box" },
+  { href: "/messages", label: "Messages" },
   { href: "/cart", label: "Cart" },
   { href: "/checkout", label: "Checkout" },
   { href: "/profile", label: "Profile" },
