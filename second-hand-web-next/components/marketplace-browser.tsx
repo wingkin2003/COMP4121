@@ -451,7 +451,6 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                   </p>
                   <div className="rental-pricing">
                     <span className="rental-daily">{formatHKD(request.dailyBudget)}<small>/day</small></span>
-                    <span className="muted">Deposit: {formatHKD(request.deposit)}</span>
                   </div>
                   <p className="muted" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
                     {request.minDays}–{request.maxDays} days · {request.location || "—"}
@@ -472,7 +471,7 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
                   {rental.image ? (
                     <img src={rental.image} alt={rental.title} />
                   ) : (
-                    <div className="product-img-placeholder">
+                    <div className="product-thumb">
                       {rental.category}
                     </div>
                   )}

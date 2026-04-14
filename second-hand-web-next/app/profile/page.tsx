@@ -12,6 +12,7 @@ import {
     getRentalOrdersByAccount,
     getStaleProducts,
     getMysteryBoxPurchasesByAccount,
+    getOrdersList,
     updateBuyOrder,
     updateProduct,
     updateRental,
@@ -36,6 +37,7 @@ import {
     RentalOrder,
     RentalStatus,
     MysteryBoxPurchase,
+    Order,
     PRODUCT_STATUSES,
     PRODUCT_CATEGORIES,
     PRODUCT_CONDITIONS,
@@ -82,6 +84,9 @@ export default function ProfilePage() {
     const [mysteryPurchases, setMysteryPurchases] = useState<MysteryBoxPurchase[]>([]);
     const [mysteryMsg, setMysteryMsg] = useState<string | null>(null);
 
+    // Purchase orders state
+    const [purchaseOrders, setPurchaseOrders] = useState<Order[]>([]);
+
     useEffect(() => {
         const load = async () => {
             const user = getCurrentAccount();
@@ -95,7 +100,7 @@ export default function ProfilePage() {
             }
 
             try {
-                const [prods, buys, rents, reqs, lends, books, stale, mystery] =
+                const [prods, buys, rents, reqs, lends, books, stale, mystery, orders] =
                     await Promise.all([
                         getProductsByAccount(user),
                         getBuyOrdersByAccount(user),
@@ -105,6 +110,7 @@ export default function ProfilePage() {
                         getRentalOrdersByAccount(user),
                         getStaleProducts(),
                         getMysteryBoxPurchasesByAccount(user),
+                        getOrdersList(),
                     ]);
                 setProducts(prods);
                 setBuyOrders(buys);
@@ -114,6 +120,7 @@ export default function ProfilePage() {
                 setRentalBookings(books);
                 setStaleProducts(stale);
                 setMysteryPurchases(mystery);
+                setPurchaseOrders(orders);
             } catch { /* ignore */ }
 
             setLoaded(true);
@@ -841,7 +848,6 @@ export default function ProfilePage() {
                                 <tr>
                                     <th>Request</th>
                                     <th>Daily Budget</th>
-                                    <th>Deposit</th>
                                     <th>Duration</th>
                                     <th>Category</th>
                                     <th>Condition</th>
@@ -860,7 +866,6 @@ export default function ProfilePage() {
                                             </div>
                                         </td>
                                         <td>{formatHKD(request.dailyBudget)}/day</td>
-                                        <td>{formatHKD(request.deposit)}</td>
                                         <td>{request.minDays}–{request.maxDays} days</td>
                                         <td>{request.category}</td>
                                         <td>{request.condition}</td>
@@ -1014,6 +1019,50 @@ export default function ProfilePage() {
                                                 </button>
                                             )}
                                         </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ---- Purchase Orders ---- */}
+                <div className="section-header" style={{ marginTop: "2rem" }}>
+                    <h1>My Purchase Orders</h1>
+                    <p className="muted">{purchaseOrders.length} order{purchaseOrders.length !== 1 ? "s" : ""}</p>
+                </div>
+
+                {purchaseOrders.length === 0 ? (
+                    <div className="content-card" style={{ textAlign: "center", padding: "2rem" }}>
+                        <p className="muted">You have not placed any orders yet.</p>
+                        <Link href="/marketplace/sell" className="btn btn-fill" style={{ marginTop: "1rem", display: "inline-block" }}>
+                            Browse Marketplace
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="listing-table-wrap">
+                        <table className="listing-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Items</th>
+                                    <th>Subtotal</th>
+                                    <th>Commission</th>
+                                    <th>Total</th>
+                                    <th>Shipping</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {purchaseOrders.map((order) => (
+                                    <tr key={order.id}>
+                                        <td><code style={{ fontSize: "0.75rem" }}>{order.id.slice(0, 8)}…</code></td>
+                                        <td>{order.items.length} item{order.items.length !== 1 ? "s" : ""}</td>
+                                        <td>{formatHKD(order.subtotal)}</td>
+                                        <td className="muted">{formatHKD(order.commission)}</td>
+                                        <td><strong>{formatHKD(order.total)}</strong></td>
+                                        <td className="muted">{order.shippingAddress || "—"}</td>
+                                        <td className="muted">{formatHKDate(order.createdAt)}</td>
                                     </tr>
                                 ))}
                             </tbody>

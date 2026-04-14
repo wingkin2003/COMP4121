@@ -42,19 +42,28 @@ export default function CheckoutPage() {
     }
   }, []);
 
+  const hasProducts = rows.some((r) => r.type === "product");
+  const hasMysteryBox = rows.some((r) => r.type === "mystery_box");
+  const hasRental = rows.some((r) => r.type === "rental");
+  const needsAddress = hasProducts;
+
   const subtotal = rows.reduce(
     (sum, row) => sum + row.price * row.quantity,
     0,
   );
-  const commission = Math.round(subtotal * COMMISSION_RATE);
-  const sellerPayout = subtotal - commission;
+  // Commission only on product items
+  const productSubtotal = rows
+    .filter((r) => r.type === "product")
+    .reduce((sum, r) => sum + r.price * r.quantity, 0);
+  const commission = Math.round(productSubtotal * COMMISSION_RATE);
+  const sellerPayout = productSubtotal - commission;
 
   const handlePay = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
 
-    if (!address.trim()) {
-      setMessage("Please provide a Hong Kong shipping address.");
+    if (needsAddress && !address.trim()) {
+      setMessage("Please provide a Hong Kong shipping address for your product items.");
       return;
     }
 
@@ -69,19 +78,29 @@ export default function CheckoutPage() {
       const items: StripeCheckoutItem[] = rows.map((row) => ({
         id: row.productId,
         title: row.title,
-        unitAmount: row.price,
+        unitAmount: Math.round(row.price),
         quantity: row.quantity,
       }));
 
-      const cartItems = rows.map((row) => ({
+      // Save cart details for the success page to process
+      const cartItemsForOrder = rows.map((row) => ({
         productId: row.productId,
         quantity: row.quantity,
+        type: row.type,
+        tier: row.tier,
+        rentalId: row.rentalId,
+        days: row.days,
+        startDate: row.startDate,
+        pickupTime: row.pickupTime,
+        renterName: row.renterName,
+        renterPhone: row.renterPhone,
+        renterNote: row.renterNote,
       }));
 
       sessionStorage.setItem(
         PENDING_ORDER_KEY,
         JSON.stringify({
-          items: cartItems,
+          items: cartItemsForOrder,
           subtotal,
           commission,
           sellerPayout,
@@ -97,7 +116,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           items,
-          shippingAddress: address.trim(),
+          shippingAddress: address.trim() || "N/A",
         }),
       });
 
@@ -138,18 +157,34 @@ export default function CheckoutPage() {
 
         <div className="content-card">
           <div className="checkout-summary">
-            <div className="checkout-row">
-              <span>Items total</span>
-              <span>{formatHKD(subtotal)}</span>
-            </div>
-            <div className="checkout-row">
-              <span>Platform commission (4%)</span>
-              <span>{formatHKD(commission)}</span>
-            </div>
-            <div className="checkout-row">
-              <span>Seller payout</span>
-              <span>{formatHKD(sellerPayout)}</span>
-            </div>
+            {hasProducts && (
+              <>
+                <div className="checkout-row">
+                  <span>Products total</span>
+                  <span>{formatHKD(productSubtotal)}</span>
+                </div>
+                <div className="checkout-row">
+                  <span>Platform commission (4%)</span>
+                  <span>{formatHKD(commission)}</span>
+                </div>
+                <div className="checkout-row">
+                  <span>Seller payout</span>
+                  <span>{formatHKD(sellerPayout)}</span>
+                </div>
+              </>
+            )}
+            {hasMysteryBox && (
+              <div className="checkout-row">
+                <span>Mystery Box{rows.filter(r => r.type === "mystery_box").length > 1 ? "es" : ""}</span>
+                <span>{formatHKD(rows.filter(r => r.type === "mystery_box").reduce((s, r) => s + r.price * r.quantity, 0))}</span>
+              </div>
+            )}
+            {hasRental && (
+              <div className="checkout-row">
+                <span>Rental booking{rows.filter(r => r.type === "rental").length > 1 ? "s" : ""}</span>
+                <span>{formatHKD(rows.filter(r => r.type === "rental").reduce((s, r) => s + r.price, 0))}</span>
+              </div>
+            )}
             <div className="checkout-row checkout-total">
               <span>Amount charged</span>
               <span>{formatHKD(subtotal)}</span>
@@ -157,15 +192,17 @@ export default function CheckoutPage() {
           </div>
 
           <form className="sell-form" onSubmit={handlePay}>
-            <label>
-              Shipping address
-              <textarea
-                rows={3}
-                placeholder="Hong Kong shipping address"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-              />
-            </label>
+            {needsAddress && (
+              <label>
+                Shipping address
+                <textarea
+                  rows={3}
+                  placeholder="Hong Kong shipping address"
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                />
+              </label>
+            )}
             <button
               className="btn btn-fill"
               type="submit"

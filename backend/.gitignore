@@ -1,7 +1,7 @@
 __pycache__/
 *.py[cod]
 .env
-uploads/
+/uploads/
 *.egg-info/
 dist/
 build/

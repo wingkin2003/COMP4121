@@ -483,6 +483,25 @@ export interface CartItem {
     price: number;
     image: string;
     seller_name: string;
+    type: string;
+    // mystery box fields
+    tier: string;
+    tier_label: string;
+    // rental fields
+    rental_id: string;
+    days: number;
+    daily_price: number;
+    deposit: number;
+    commission: number;
+    rental_total: number;
+    start_date: string;
+    end_date: string;
+    pickup_time: string;
+    renter_name: string;
+    renter_phone: string;
+    renter_note: string;
+    location: string;
+    owner_name: string;
 }
 
 export interface Cart {
@@ -499,6 +518,28 @@ export const cartApi = {
         return apiFetch<Cart>("/api/cart/items", {
             method: "POST",
             body: JSON.stringify({ product_id, quantity }),
+        });
+    },
+
+    async addMysteryBox(tier: string): Promise<Cart> {
+        return apiFetch<Cart>("/api/cart/mystery-box", {
+            method: "POST",
+            body: JSON.stringify({ tier }),
+        });
+    },
+
+    async addRental(data: {
+        rental_id: string;
+        days: number;
+        start_date?: string;
+        pickup_time?: string;
+        renter_name?: string;
+        renter_phone?: string;
+        renter_note?: string;
+    }): Promise<Cart> {
+        return apiFetch<Cart>("/api/cart/rental", {
+            method: "POST",
+            body: JSON.stringify(data),
         });
     },
 

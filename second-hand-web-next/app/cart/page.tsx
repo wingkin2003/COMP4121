@@ -6,6 +6,7 @@ import { AppNav } from "@/components/app-nav";
 import {
   getCartWithDetails,
   updateCartItem,
+  removeCartItem,
   type CartItemDetail,
 } from "@/lib/api-helpers";
 import { formatHKD } from "@/lib/format";
@@ -35,6 +36,15 @@ export default function CartPage() {
   const updateQty = async (productId: string, quantity: number) => {
     try {
       await updateCartItem(productId, quantity);
+      await loadCart();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const removeItem = async (productId: string) => {
+    try {
+      await removeCartItem(productId);
       await loadCart();
     } catch {
       /* ignore */
@@ -75,29 +85,76 @@ export default function CartPage() {
                   <div key={row.productId} className="cart-item">
                     <div className="cart-item-info">
                       <strong>{row.title}</strong>
-                      <span className="muted">
-                        {formatHKD(row.price)} each
-                      </span>
+                      {row.type === "product" && (
+                        <span className="muted">
+                          {formatHKD(row.price)} each
+                        </span>
+                      )}
+                      {row.type === "mystery_box" && (
+                        <span className="muted">
+                          Mystery Box · {formatHKD(row.price)} each
+                        </span>
+                      )}
+                      {row.type === "rental" && (
+                        <span className="muted">
+                          {formatHKD(row.dailyPrice)}/day × {row.days} day{row.days !== 1 ? "s" : ""}
+                          {row.deposit > 0 ? ` + ${formatHKD(row.deposit)} deposit` : ""}
+                          {" · "}{row.startDate} → {row.endDate}
+                          {row.location ? ` · ${row.location}` : ""}
+                        </span>
+                      )}
                     </div>
-                    <div className="cart-qty">
-                      <button
-                        className="qty-btn"
-                        onClick={() =>
-                          updateQty(row.productId, row.quantity - 1)
-                        }
-                      >
-                        −
-                      </button>
-                      <span className="qty-num">{row.quantity}</span>
-                      <button
-                        className="qty-btn"
-                        onClick={() =>
-                          updateQty(row.productId, row.quantity + 1)
-                        }
-                      >
-                        +
-                      </button>
-                    </div>
+                    {row.type === "product" ? (
+                      <div className="cart-qty">
+                        <button
+                          className="qty-btn"
+                          onClick={() =>
+                            updateQty(row.productId, row.quantity - 1)
+                          }
+                        >
+                          −
+                        </button>
+                        <span className="qty-num">{row.quantity}</span>
+                        <button
+                          className="qty-btn"
+                          onClick={() =>
+                            updateQty(row.productId, row.quantity + 1)
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : row.type === "mystery_box" ? (
+                      <div className="cart-qty">
+                        <button
+                          className="qty-btn"
+                          onClick={() =>
+                            updateQty(row.productId, row.quantity - 1)
+                          }
+                        >
+                          −
+                        </button>
+                        <span className="qty-num">{row.quantity}</span>
+                        <button
+                          className="qty-btn"
+                          onClick={() =>
+                            updateQty(row.productId, row.quantity + 1)
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="cart-qty">
+                        <button
+                          className="qty-btn"
+                          onClick={() => removeItem(row.productId)}
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
                     <div className="cart-item-total">
                       {formatHKD(row.price * row.quantity)}
                     </div>

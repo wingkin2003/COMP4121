@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   getRental,
-  createRentalOrder,
-  updateRental,
   getCurrentAccount,
+  addRentalToCart,
 } from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { RentalListing } from "@/lib/mvp-types";
@@ -36,6 +35,7 @@ const IconMapPin = () => (
 
 export default function RentalDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [rental, setRental] = useState<RentalListing | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -46,8 +46,8 @@ export default function RentalDetailPage() {
   const [renterName, setRenterName] = useState("");
   const [renterPhone, setRenterPhone] = useState("");
   const [renterNote, setRenterNote] = useState("");
-  const [booked, setBooked] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +115,7 @@ export default function RentalDetailPage() {
   const isOwn = getCurrentAccount() === rental.ownerAccount;
   const isAvailable = rental.status === "available";
 
-  const handleBook = async () => {
+  const handleAddToCart = async () => {
     setError(null);
     if (!startDate) { setError("Please select a start date."); return; }
     if (!renterName.trim()) { setError("Please enter your name."); return; }
@@ -130,20 +130,22 @@ export default function RentalDetailPage() {
       return;
     }
 
+    setAdding(true);
     try {
-      await createRentalOrder({
+      await addRentalToCart({
         rentalId: rental.id,
-        renterName: renterName.trim(),
         days,
         startDate: new Date(startDate).toISOString(),
         pickupTime,
-        phone: renterPhone.trim(),
-        note: renterNote.trim(),
+        renterName: renterName.trim(),
+        renterPhone: renterPhone.trim(),
+        renterNote: renterNote.trim(),
       });
-      await updateRental(rental.id, { status: "rented" });
-      setBooked(true);
+      router.push("/cart");
     } catch {
-      setError("Failed to book. Please try again.");
+      setError("Failed to add to cart. Please try again.");
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -196,68 +198,8 @@ export default function RentalDetailPage() {
           </div>
         </div>
 
-        {/* ---- booking confirmed ---- */}
-        {booked && (
-          <div className="content-card" style={{ marginTop: "1.5rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "1.2rem" }}>
-              <div className="rd-check-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              </div>
-              <h2 style={{ margin: "0 0 0.2rem" }}>Booking Confirmed</h2>
-              <p className="muted">Your rental has been reserved successfully.</p>
-            </div>
-
-            <div className="rd-timeline">
-              <div className="rd-timeline-item">
-                <span className="rd-timeline-icon"><IconCalendar /></span>
-                <div>
-                  <span className="rd-timeline-label">Pickup</span>
-                  <span>{startDate} at {pickupTime}</span>
-                </div>
-              </div>
-              <div className="rd-timeline-line" />
-              <div className="rd-timeline-item">
-                <span className="rd-timeline-icon"><IconReturn /></span>
-                <div>
-                  <span className="rd-timeline-label">Return by</span>
-                  <span>{endDate}</span>
-                </div>
-              </div>
-              <div className="rd-timeline-line" />
-              <div className="rd-timeline-item">
-                <span className="rd-timeline-icon"><IconMapPin /></span>
-                <div>
-                  <span className="rd-timeline-label">Location</span>
-                  <span>{rental.location || "To be confirmed"}</span>
-                </div>
-              </div>
-            </div>
-
-            <table className="detail-table" style={{ marginTop: "1.2rem" }}>
-              <tbody>
-                <tr><td className="detail-label">Item</td><td>{rental.title}</td></tr>
-                <tr><td className="detail-label">Duration</td><td>{days} day{days !== 1 ? "s" : ""}</td></tr>
-                <tr><td className="detail-label">Rental fee</td><td>{formatHKD(pricing.rentalFee)}</td></tr>
-                <tr><td className="detail-label">Deposit</td><td>{formatHKD(rental.deposit)}</td></tr>
-                <tr style={{ fontWeight: 700 }}><td className="detail-label" style={{ color: "#333" }}>Total paid</td><td>{formatHKD(pricing.total)}</td></tr>
-              </tbody>
-            </table>
-
-            {renterNote && (
-              <p className="muted" style={{ fontSize: "0.85rem", marginTop: "0.6rem" }}>
-                <strong>Your note:</strong> {renterNote}
-              </p>
-            )}
-
-            <div className="detail-actions" style={{ marginTop: "1.2rem" }}>
-              <Link href="/marketplace/rent" className="btn btn-fill">Browse more</Link>
-              <Link href="/profile" className="btn">My profile</Link>
-            </div>
-          </div>
-        )}
-
         {/* ---- booking form (only if available and not own) ---- */}
-        {!booked && isAvailable && !isOwn && (
+        {isAvailable && !isOwn && (
           <div className="content-card sell-form" style={{ marginTop: "1.5rem" }}>
             <h2 style={{ fontSize: "1.15rem", margin: "0 0 1.2rem" }}>Book this item</h2>
 
@@ -394,8 +336,13 @@ export default function RentalDetailPage() {
 
             {error && <p className="rd-error">{error}</p>}
 
-            <button className="btn btn-fill" style={{ width: "100%", marginTop: "1rem", padding: "0.75rem 1rem", fontSize: "1rem" }} onClick={handleBook}>
-              Confirm Booking &mdash; {formatHKD(pricing.total)}
+            <button
+              className="btn btn-fill"
+              style={{ width: "100%", marginTop: "1rem", padding: "0.75rem 1rem", fontSize: "1rem" }}
+              onClick={handleAddToCart}
+              disabled={adding}
+            >
+              {adding ? "Adding..." : `Add to Cart — ${formatHKD(pricing.total)}`}
             </button>
           </div>
         )}

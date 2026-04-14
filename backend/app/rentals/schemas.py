@@ -67,7 +67,6 @@ class RentalRequestCreate(BaseModel):
     title: str = Field(..., min_length=1)
     description: str = ""
     daily_budget: float = Field(..., gt=0)
-    deposit: float = Field(..., ge=0)
     min_days: int = Field(..., ge=1)
     max_days: int = Field(..., ge=1)
     category: ProductCategory = "Other"
@@ -81,7 +80,6 @@ class RentalRequestUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     daily_budget: float | None = None
-    deposit: float | None = None
     min_days: int | None = None
     max_days: int | None = None
     category: ProductCategory | None = None
@@ -97,7 +95,6 @@ class RentalRequestOut(BaseModel):
     title: str
     description: str
     daily_budget: float
-    deposit: float
     min_days: int
     max_days: int
     category: str

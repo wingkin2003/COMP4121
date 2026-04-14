@@ -95,7 +95,6 @@ async def create_rental_request(data: dict, requester_account: str) -> dict:
         "title": data["title"],
         "description": data.get("description", ""),
         "daily_budget": data["daily_budget"],
-        "deposit": data.get("deposit", 0),
         "min_days": data.get("min_days", 1),
         "max_days": data.get("max_days", 7),
         "category": data.get("category", "Other"),

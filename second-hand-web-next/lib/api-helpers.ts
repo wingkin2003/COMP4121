@@ -474,6 +474,25 @@ export interface CartItemDetail {
     price: number;
     image: string;
     sellerName: string;
+    type: "product" | "mystery_box" | "rental";
+    // mystery box
+    tier: string;
+    tierLabel: string;
+    // rental
+    rentalId: string;
+    days: number;
+    dailyPrice: number;
+    deposit: number;
+    commission: number;
+    rentalTotal: number;
+    startDate: string;
+    endDate: string;
+    pickupTime: string;
+    renterName: string;
+    renterPhone: string;
+    renterNote: string;
+    location: string;
+    ownerName: string;
 }
 
 export async function getCartWithDetails(): Promise<{
@@ -489,6 +508,23 @@ export async function getCartWithDetails(): Promise<{
             price: item.price,
             image: resolveImageUrl(item.image),
             sellerName: item.seller_name,
+            type: (item.type || "product") as "product" | "mystery_box" | "rental",
+            tier: item.tier || "",
+            tierLabel: item.tier_label || "",
+            rentalId: item.rental_id || "",
+            days: item.days || 0,
+            dailyPrice: item.daily_price || 0,
+            deposit: item.deposit || 0,
+            commission: item.commission || 0,
+            rentalTotal: item.rental_total || 0,
+            startDate: item.start_date || "",
+            endDate: item.end_date || "",
+            pickupTime: item.pickup_time || "",
+            renterName: item.renter_name || "",
+            renterPhone: item.renter_phone || "",
+            renterNote: item.renter_note || "",
+            location: item.location || "",
+            ownerName: item.owner_name || "",
         })),
         subtotal: data.subtotal,
     };
@@ -496,6 +532,30 @@ export async function getCartWithDetails(): Promise<{
 
 export async function addToCart(productId: string): Promise<void> {
     await cartApi.addItem(productId, 1);
+}
+
+export async function addMysteryBoxToCart(tier: string): Promise<void> {
+    await cartApi.addMysteryBox(tier);
+}
+
+export async function addRentalToCart(data: {
+    rentalId: string;
+    days: number;
+    startDate?: string;
+    pickupTime?: string;
+    renterName?: string;
+    renterPhone?: string;
+    renterNote?: string;
+}): Promise<void> {
+    await cartApi.addRental({
+        rental_id: data.rentalId,
+        days: data.days,
+        start_date: data.startDate,
+        pickup_time: data.pickupTime,
+        renter_name: data.renterName,
+        renter_phone: data.renterPhone,
+        renter_note: data.renterNote,
+    });
 }
 
 export async function updateCartItem(

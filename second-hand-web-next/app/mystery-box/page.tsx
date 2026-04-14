@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
     getCurrentAccount,
     getMysteryBoxCounts,
-    purchaseMysteryBox,
     getMysteryBoxPurchasesByAccount,
+    addMysteryBoxToCart,
 } from "@/lib/api-helpers";
 import { MYSTERY_BOX_TIERS, MysteryBoxPurchase } from "@/lib/mvp-types";
 import { formatHKD, formatHKDate } from "@/lib/format";
@@ -16,8 +17,7 @@ export default function MysteryBoxPage() {
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [purchases, setPurchases] = useState<MysteryBoxPurchase[]>([]);
     const [loaded, setLoaded] = useState(false);
-    const [reveal, setReveal] = useState<MysteryBoxPurchase | null>(null);
-    const [animating, setAnimating] = useState(false);
+    const [addedTier, setAddedTier] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -36,29 +36,13 @@ export default function MysteryBoxPage() {
         void load();
     }, []);
 
-    const handlePurchase = (tierKey: string) => {
-        setAnimating(true);
-        setReveal(null);
-
-        // Simulate box-opening animation delay
-        setTimeout(async () => {
-            try {
-                const result = await purchaseMysteryBox(tierKey);
-                if (result) {
-                    setReveal(result);
-                    const [c, p] = await Promise.all([
-                        getMysteryBoxCounts(),
-                        getMysteryBoxPurchasesByAccount(account),
-                    ]);
-                    setCounts(c);
-                    setPurchases(p);
-                }
-            } catch { /* ignore */ }
-            setAnimating(false);
-        }, 1500);
+    const handleAddToCart = async (tierKey: string) => {
+        try {
+            await addMysteryBoxToCart(tierKey);
+            setAddedTier(tierKey);
+            setTimeout(() => setAddedTier(null), 2000);
+        } catch { /* ignore */ }
     };
-
-    const closeReveal = () => setReveal(null);
 
     if (!loaded) {
         return (
@@ -81,33 +65,11 @@ export default function MysteryBoxPage() {
                     </p>
                 </div>
 
-                {/* ---- Reveal overlay ---- */}
-                {(animating || reveal) && (
-                    <div className="mystery-overlay" onClick={reveal ? closeReveal : undefined}>
-                        <div className="mystery-reveal-card" onClick={(e) => e.stopPropagation()}>
-                            {animating ? (
-                                <div className="mystery-opening">
-                                    <div className="mystery-box-icon spin"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12" /><path d="M2 7h20v5H2z" /><path d="M12 22V7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg></div>
-                                    <p>Opening your Mystery Box...</p>
-                                </div>
-                            ) : reveal ? (
-                                <div className="mystery-result">
-                                    <div className="mystery-box-icon bounce"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12" /><path d="M2 7h20v5H2z" /><path d="M12 22V7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg></div>
-                                    <h2>You got:</h2>
-                                    <h3>{reveal.productTitle}</h3>
-                                    <div className="mystery-result-details">
-                                        <p><span className="muted">Original price:</span> <s>{formatHKD(reveal.originalPrice)}</s></p>
-                                        <p><span className="muted">You paid:</span> <strong>{formatHKD(reveal.pricePaid)}</strong></p>
-                                        <p className="mystery-savings">
-                                            You saved {formatHKD(reveal.originalPrice - reveal.pricePaid)}!
-                                        </p>
-                                    </div>
-                                    <button className="btn btn-fill" onClick={closeReveal} style={{ marginTop: "1rem" }}>
-                                        Nice!
-                                    </button>
-                                </div>
-                            ) : null}
-                        </div>
+                {/* ---- Added to cart notification ---- */}
+                {addedTier && (
+                    <div className="detail-msg" style={{ textAlign: "center", marginBottom: "1rem", color: "#2e7d32" }}>
+                        ✓ Mystery Box added to cart!{" "}
+                        <Link href="/cart" style={{ fontWeight: 600 }}>View cart</Link>
                     </div>
                 )}
 
@@ -127,10 +89,10 @@ export default function MysteryBoxPage() {
                                 </p>
                                 <button
                                     className="btn btn-fill"
-                                    disabled={empty || animating}
-                                    onClick={() => handlePurchase(tier.tier)}
+                                    disabled={empty}
+                                    onClick={() => handleAddToCart(tier.tier)}
                                 >
-                                    {empty ? "Sold out" : `Buy for ${formatHKD(tier.price)}`}
+                                    {empty ? "Sold out" : `Add to Cart — ${formatHKD(tier.price)}`}
                                 </button>
                             </div>
                         );
@@ -151,8 +113,8 @@ export default function MysteryBoxPage() {
                         <div className="mystery-step">
                             <span className="mystery-step-num">2</span>
                             <div>
-                                <strong>Pay the box price</strong>
-                                <p className="muted">Always less than the original listing price</p>
+                                <strong>Add to cart &amp; pay via Stripe</strong>
+                                <p className="muted">Secure payment through Stripe checkout</p>
                             </div>
                         </div>
                         <div className="mystery-step">

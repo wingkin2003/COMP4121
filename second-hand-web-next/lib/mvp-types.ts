@@ -139,7 +139,6 @@ export type RentalRequest = {
   title: string;
   description: string;
   dailyBudget: number;
-  deposit: number;
   minDays: number;
   maxDays: number;
   category: ProductCategory;
