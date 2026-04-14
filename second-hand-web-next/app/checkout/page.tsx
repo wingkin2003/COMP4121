@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/app-nav";
-import { getCart, getProducts } from "@/lib/mvp-data";
+import { getCartWithDetails, type CartItemDetail } from "@/lib/api-helpers";
 import { formatHKD } from "@/lib/format";
 
 const COMMISSION_RATE = 0.04;
@@ -20,36 +20,34 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const products = getProducts();
-  const cart = getCart();
-
-  const rows = cart
-    .map((item) => {
-      const product = products.find((entry) => entry.id === item.productId);
-      if (!product) return null;
-      return { product, quantity: item.quantity };
-    })
-    .filter(
-      (
-        entry,
-      ): entry is { product: (typeof products)[number]; quantity: number } =>
-        Boolean(entry),
-    );
-
-  const subtotal = rows.reduce(
-    (sum, row) => sum + row.product.price * row.quantity,
-    0,
-  );
-  const commission = Math.round(subtotal * COMMISSION_RATE);
-  const sellerPayout = subtotal - commission;
+  const [rows, setRows] = useState<CartItemDetail[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getCartWithDetails();
+        setRows(data.items);
+      } catch {
+        setRows([]);
+      } finally {
+        setLoaded(true);
+      }
+    };
+    void load();
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("cancelled") === "1") {
       setMessage("Stripe payment was cancelled. You can try again.");
     }
   }, []);
+
+  const subtotal = rows.reduce(
+    (sum, row) => sum + row.price * row.quantity,
+    0,
+  );
+  const commission = Math.round(subtotal * COMMISSION_RATE);
+  const sellerPayout = subtotal - commission;
 
   const handlePay = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,16 +67,21 @@ export default function CheckoutPage() {
 
     try {
       const items: StripeCheckoutItem[] = rows.map((row) => ({
-        id: row.product.id,
-        title: row.product.title,
-        unitAmount: row.product.price,
+        id: row.productId,
+        title: row.title,
+        unitAmount: row.price,
+        quantity: row.quantity,
+      }));
+
+      const cartItems = rows.map((row) => ({
+        productId: row.productId,
         quantity: row.quantity,
       }));
 
       sessionStorage.setItem(
         PENDING_ORDER_KEY,
         JSON.stringify({
-          items: cart,
+          items: cartItems,
           subtotal,
           commission,
           sellerPayout,

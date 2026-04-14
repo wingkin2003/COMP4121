@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
-  getRentals,
-  addRentalOrder,
+  getRental,
+  createRentalOrder,
   updateRental,
   getCurrentAccount,
-} from "@/lib/mvp-data";
+} from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { RentalListing } from "@/lib/mvp-types";
 
@@ -50,12 +50,19 @@ export default function RentalDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const found = getRentals().find((r) => r.id === id) ?? null;
-    setRental(found);
-    setLoaded(true);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setStartDate(tomorrow.toISOString().split("T")[0]);
+    let cancelled = false;
+    async function load() {
+      const found = await getRental(id);
+      if (!cancelled) {
+        setRental(found);
+        setLoaded(true);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setStartDate(tomorrow.toISOString().split("T")[0]);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
@@ -108,7 +115,7 @@ export default function RentalDetailPage() {
   const isOwn = getCurrentAccount() === rental.ownerAccount;
   const isAvailable = rental.status === "available";
 
-  const handleBook = () => {
+  const handleBook = async () => {
     setError(null);
     if (!startDate) { setError("Please select a start date."); return; }
     if (!renterName.trim()) { setError("Please enter your name."); return; }
@@ -122,28 +129,22 @@ export default function RentalDetailPage() {
       setError("Start date cannot be in the past.");
       return;
     }
-    const end = new Date(start);
-    end.setDate(end.getDate() + days);
 
-    addRentalOrder({
-      id: crypto.randomUUID(),
-      rentalId: rental.id,
-      rentalTitle: rental.title,
-      renterAccount: getCurrentAccount(),
-      renterName: renterName.trim(),
-      days,
-      rentalFee: pricing.rentalFee,
-      deposit: rental.deposit,
-      commission: pricing.commission,
-      total: pricing.total,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      status: "active",
-      createdAt: new Date().toISOString(),
-    });
-
-    updateRental(rental.id, { status: "rented" });
-    setBooked(true);
+    try {
+      await createRentalOrder({
+        rentalId: rental.id,
+        renterName: renterName.trim(),
+        days,
+        startDate: new Date(startDate).toISOString(),
+        pickupTime,
+        phone: renterPhone.trim(),
+        note: renterNote.trim(),
+      });
+      await updateRental(rental.id, { status: "rented" });
+      setBooked(true);
+    } catch {
+      setError("Failed to book. Please try again.");
+    }
   };
 
   return (

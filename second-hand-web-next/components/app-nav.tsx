@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logoutUser } from "@/lib/api-helpers";
 
 const links = [
   { href: "/marketplace/sell", label: "Marketplace" },
@@ -30,8 +31,7 @@ export function AppNav() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("isLoggedIn");
+    logoutUser();
     window.location.href = "/";
   };
 

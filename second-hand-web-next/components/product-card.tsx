@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Product } from "@/lib/mvp-types";
 import { formatHKD } from "@/lib/format";
-import { toggleLike, hasUserLiked } from "@/lib/mvp-data";
+import { toggleLike, hasUserLiked } from "@/lib/api-helpers";
 
 type ProductCardProps = {
   product: Product;
@@ -15,13 +15,15 @@ export function ProductCard({ product }: ProductCardProps) {
   const [count, setCount] = useState(product.likes || 0);
 
   useEffect(() => {
-    setLiked(hasUserLiked(product.id));
+    hasUserLiked(product.id).then(setLiked).catch(() => { });
   }, [product.id]);
 
-  const handleLike = () => {
-    const result = toggleLike(product.id);
-    setLiked(result.liked);
-    setCount(result.newCount);
+  const handleLike = async () => {
+    try {
+      const result = await toggleLike(product.id);
+      setLiked(result.liked);
+      setCount(result.newCount);
+    } catch { /* ignore */ }
   };
 
   return (

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addRentalLending, getCurrentAccount, getRentalRequests } from "@/lib/mvp-data";
+import { createRentalLending, getCurrentAccount, getRentalRequest } from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { RentalRequest } from "@/lib/mvp-types";
 
@@ -44,13 +44,19 @@ export default function RentRequestDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const found = getRentalRequests().find((entry) => entry.id === id) ?? null;
-    setRequest(found);
-    setLoaded(true);
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setStartDate(tomorrow.toISOString().split("T")[0]);
+    let cancelled = false;
+    async function load() {
+      const found = await getRentalRequest(id);
+      if (!cancelled) {
+        setRequest(found);
+        setLoaded(true);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setStartDate(tomorrow.toISOString().split("T")[0]);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
@@ -106,7 +112,7 @@ export default function RentRequestDetailPage() {
 
   const isOwn = getCurrentAccount() === request.requesterAccount;
 
-  const handleLend = () => {
+  const handleLend = async () => {
     setError(null);
     if (!startDate) {
       setError("Please select a start date.");
@@ -125,32 +131,27 @@ export default function RentRequestDetailPage() {
       return;
     }
 
-    const account = getCurrentAccount();
     const end = new Date(startDate);
     end.setDate(end.getDate() + days);
 
-    addRentalLending({
-      id: crypto.randomUUID(),
-      requestId: request.id,
-      requestTitle: request.title,
-      lenderAccount: account,
-      lenderName: lenderName.trim(),
-      lenderPhone: lenderPhone.trim(),
-      note: lenderNote.trim(),
-      days,
-      rentalFee: pricing.rentalFee,
-      commission: pricing.commission,
-      deposit: pricing.deposit,
-      total: pricing.total,
-      startDate: new Date(startDate).toISOString(),
-      endDate: end.toISOString(),
-      pickupTime,
-      location: request.location || "",
-      status: "offered",
-      createdAt: new Date().toISOString(),
-    });
-
-    setBooked(true);
+    try {
+      await createRentalLending({
+        requestId: request.id,
+        lenderName: lenderName.trim(),
+        lenderPhone: lenderPhone.trim(),
+        note: lenderNote.trim(),
+        days,
+        rentalFee: pricing.rentalFee,
+        deposit: pricing.deposit,
+        startDate: new Date(startDate).toISOString(),
+        endDate: end.toISOString(),
+        pickupTime,
+        location: request.location || "",
+      });
+      setBooked(true);
+    } catch {
+      setError("Failed to submit lending offer. Please try again.");
+    }
   };
 
   return (

@@ -4,12 +4,12 @@ import Link from "next/link";
 import { FormEvent, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
-  addBuyOrder,
-  addProduct,
-  addRental,
-  addRentalRequest,
+  createBuyOrder,
+  createProduct,
+  createRental,
+  createRentalRequest,
   getCurrentAccount,
-} from "@/lib/mvp-data";
+} from "@/lib/api-helpers";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -50,6 +50,8 @@ export function OrderPage({ mode }: OrderPageProps) {
   const [minDays, setMinDays] = useState("1");
   const [maxDays, setMaxDays] = useState("7");
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -65,7 +67,7 @@ export function OrderPage({ mode }: OrderPageProps) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const numericAmount = Number(amount);
     if (!title || Number.isNaN(numericAmount) || numericAmount <= 0) {
@@ -79,118 +81,106 @@ export function OrderPage({ mode }: OrderPageProps) {
       return;
     }
 
-    if (isRent && !isRentRequest) {
-      const numDeposit = Number(deposit);
-      if (Number.isNaN(numDeposit) || numDeposit <= 0) {
-        setResult("Please provide a valid deposit amount.");
-        return;
+    setIsSubmitting(true);
+    const imageFile = fileRef.current?.files?.[0];
+
+    try {
+      if (isRent && !isRentRequest) {
+        const numDeposit = Number(deposit);
+        if (Number.isNaN(numDeposit) || numDeposit <= 0) {
+          setResult("Please provide a valid deposit amount.");
+          setIsSubmitting(false);
+          return;
+        }
+        await createRental({
+          title,
+          description,
+          dailyPrice: numericAmount,
+          deposit: numDeposit,
+          minDays: Math.max(1, Number(minDays) || 1),
+          maxDays: Math.max(1, Number(maxDays) || 7),
+          category,
+          condition,
+          location,
+          ownerName: displayName,
+        }, imageFile);
+      } else if (isRentRequest) {
+        const numDeposit = Number(deposit);
+        if (Number.isNaN(numDeposit) || numDeposit <= 0) {
+          setResult("Please provide a valid deposit amount.");
+          setIsSubmitting(false);
+          return;
+        }
+        await createRentalRequest({
+          title,
+          description,
+          dailyBudget: numericAmount,
+          deposit: numDeposit,
+          minDays: Math.max(1, Number(minDays) || 1),
+          maxDays: Math.max(1, Number(maxDays) || 7),
+          category,
+          condition,
+          location,
+          requesterName: displayName,
+        }, imageFile);
+      } else if (isSell) {
+        await createProduct({
+          title,
+          description,
+          price: numericAmount,
+          category,
+          condition,
+          location,
+          sellerName: displayName,
+          sustainabilityTag: sustainabilityTag === "None" ? undefined : sustainabilityTag,
+        }, imageFile);
+      } else {
+        await createBuyOrder({
+          title,
+          description,
+          budget: numericAmount,
+          category,
+          condition,
+          location,
+          buyerName: displayName,
+        }, imageFile);
       }
-      addRental({
-        id: crypto.randomUUID(),
-        title,
-        description,
-        dailyPrice: numericAmount,
-        deposit: numDeposit,
-        minDays: Math.max(1, Number(minDays) || 1),
-        maxDays: Math.max(1, Number(maxDays) || 7),
-        category,
-        condition,
-        image: imagePreview || "",
-        location,
-        ownerName: displayName,
-        ownerAccount: getCurrentAccount(),
-        status: "available",
-        likes: 0,
-        createdAt: new Date().toISOString(),
-      });
-    } else if (isRentRequest) {
-      const numDeposit = Number(deposit);
-      if (Number.isNaN(numDeposit) || numDeposit <= 0) {
-        setResult("Please provide a valid deposit amount.");
-        return;
-      }
-      addRentalRequest({
-        id: crypto.randomUUID(),
-        title,
-        description,
-        dailyBudget: numericAmount,
-        deposit: numDeposit,
-        minDays: Math.max(1, Number(minDays) || 1),
-        maxDays: Math.max(1, Number(maxDays) || 7),
-        category,
-        condition,
-        image: imagePreview || "",
-        location,
-        requesterName: displayName,
-        requesterAccount: getCurrentAccount(),
-        status: "open",
-        createdAt: new Date().toISOString(),
-      });
-    } else if (isSell) {
-      addProduct({
-        id: crypto.randomUUID(),
-        title,
-        description,
-        price: numericAmount,
-        category,
-        condition,
-        image: imagePreview || "",
-        location,
-        sellerName: displayName,
-        sellerAccount: getCurrentAccount(),
-        status: "selling",
-        likes: 0,
-        createdAt: new Date().toISOString(),
-        sustainabilityTag:
-          sustainabilityTag === "None" ? undefined : sustainabilityTag,
-      });
-    } else {
-      addBuyOrder({
-        id: crypto.randomUUID(),
-        title,
-        description,
-        budget: numericAmount,
-        category,
-        condition,
-        image: imagePreview || "",
-        location,
-        buyerName: displayName,
-        buyerAccount: getCurrentAccount(),
-        status: "open",
-        createdAt: new Date().toISOString(),
-      });
+
+      setTitle("");
+      setDescription("");
+      setAmount("");
+      setDisplayName("");
+      setLocation("");
+      setSustainabilityTag("None");
+      setImagePreview(null);
+      setDeposit("");
+      setMinDays("1");
+      setMaxDays("7");
+      if (fileRef.current) fileRef.current.value = "";
+      setResult(
+        isSell
+          ? "Listing created! Redirecting..."
+          : isBuy
+            ? "Buy request created! Redirecting..."
+            : isRentRequest
+              ? "Rent request created! Redirecting..."
+              : "Rental listing created! Redirecting...",
+      );
+
+      setTimeout(() => {
+        window.location.href = isSell
+          ? "/marketplace/sell"
+          : isBuy
+            ? "/marketplace/buy"
+            : isRentRequest
+              ? "/marketplace/rent/request"
+              : "/marketplace/rent";
+      }, 1500);
+    } catch {
+      setResult("Failed to create. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setTitle("");
-    setDescription("");
-    setAmount("");
-    setDisplayName("");
-    setLocation("");
-    setSustainabilityTag("None");
-    setImagePreview(null);
-    setDeposit("");
-    setMinDays("1");
-    setMaxDays("7");
-    if (fileRef.current) fileRef.current.value = "";
-    setResult(
-      isSell
-        ? "Listing created! Redirecting..."
-        : isBuy
-          ? "Buy request created! Redirecting..."
-          : isRentRequest
-            ? "Rent request created! Redirecting..."
-            : "Rental listing created! Redirecting...",
-    );
-
-    setTimeout(() => {
-      window.location.href = isSell
-        ? "/marketplace/sell"
-        : isBuy
-          ? "/marketplace/buy"
-          : isRentRequest
-            ? "/marketplace/rent/request"
-            : "/marketplace/rent";
-    }, 1500);
   };
 
   return (
@@ -476,7 +466,7 @@ export function OrderPage({ mode }: OrderPageProps) {
               />
             </label>
 
-            <button className="btn btn-fill" type="submit">
+            <button className="btn btn-fill" type="submit" disabled={isSubmitting}>
               {isSell
                 ? "Publish listing"
                 : isBuy

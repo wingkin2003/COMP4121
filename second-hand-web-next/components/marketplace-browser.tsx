@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { AppNav } from "@/components/app-nav";
 import {
-  getBuyOrders,
   getProducts,
+  getBuyOrders,
   getRentalRequests,
   getRentals,
-} from "@/lib/mvp-data";
+} from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import {
   PRODUCT_CATEGORIES,
@@ -56,16 +56,32 @@ export function MarketplaceBrowser({ mode }: MarketplaceBrowserProps) {
   const [rentalRequests, setRentalRequests] = useState<RentalRequest[]>([]);
 
   useEffect(() => {
-    setProducts(getProducts());
-    setOrders(getBuyOrders());
-    setRentals(getRentals());
-    setRentalRequests(getRentalRequests());
-    setHydrated(true);
+    let cancelled = false;
+    async function load() {
+      try {
+        const [p, o, r, rr] = await Promise.all([
+          getProducts({ status: "selling" }),
+          getBuyOrders({ status: "open" }),
+          getRentals({ status: "available" }),
+          getRentalRequests({ status: "open" }),
+        ]);
+        if (!cancelled) {
+          setProducts(p);
+          setOrders(o);
+          setRentals(r);
+          setRentalRequests(rr);
+          setHydrated(true);
+        }
+      } catch {
+        if (!cancelled) setHydrated(true);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, []);
 
   const sellFiltered = useMemo(() => {
     return [...products]
-      .filter((product) => !product.status || product.status === "selling")
       .filter((product) =>
         product.title.toLowerCase().includes(query.trim().toLowerCase()),
       )

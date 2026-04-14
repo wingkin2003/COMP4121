@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Uploads
+backend/uploads/
+
+# Plan (private)
+BACKEND_PLAN.md
+
+# OS
+.DS_Store
+
+# Build
+.next/
+.vercel/

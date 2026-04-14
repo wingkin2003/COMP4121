@@ -8,10 +8,10 @@ import {
     getStaleProducts,
     moveToMysteryBox,
     getProductsByAccount,
-} from "@/lib/mvp-data";
+    getProductTier,
+} from "@/lib/api-helpers";
 import { Product, MYSTERY_BOX_TIERS } from "@/lib/mvp-types";
 import { formatHKD, formatHKDate } from "@/lib/format";
-import { getProductTier } from "@/lib/mvp-data";
 
 export default function OrderMysteryBoxPage() {
     const [account, setAccount] = useState("");
@@ -21,22 +21,34 @@ export default function OrderMysteryBoxPage() {
     const [msg, setMsg] = useState<string | null>(null);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
+        const load = async () => {
             const user = getCurrentAccount();
             setAccount(user);
-            setStaleProducts(getStaleProducts(user));
-            setAllProducts(getProductsByAccount(user));
+            try {
+                const [stale, all] = await Promise.all([
+                    getStaleProducts(),
+                    getProductsByAccount(user),
+                ]);
+                setStaleProducts(stale);
+                setAllProducts(all);
+            } catch { /* ignore */ }
             setLoaded(true);
-        }, 0);
-        return () => window.clearTimeout(timer);
+        };
+        void load();
     }, []);
 
-    const handleMoveToBox = (productId: string) => {
-        moveToMysteryBox(productId);
-        setStaleProducts(getStaleProducts(account));
-        setAllProducts(getProductsByAccount(account));
-        setMsg("Item moved to Mystery Box pool!");
-        setTimeout(() => setMsg(null), 2000);
+    const handleMoveToBox = async (productId: string) => {
+        try {
+            await moveToMysteryBox(productId);
+            const [stale, all] = await Promise.all([
+                getStaleProducts(),
+                getProductsByAccount(account),
+            ]);
+            setStaleProducts(stale);
+            setAllProducts(all);
+            setMsg("Item moved to Mystery Box pool!");
+            setTimeout(() => setMsg(null), 2000);
+        } catch { /* ignore */ }
     };
 
     const mysteryBoxItems = allProducts.filter(

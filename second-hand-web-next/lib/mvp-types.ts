@@ -201,42 +201,42 @@ export const MYSTERY_BOX_TIERS: {
   maxOriginalPrice: number;
   description: string;
 }[] = [
-  {
-    tier: "$50",
-    label: "$50 Box",
-    price: 50,
-    maxOriginalPrice: 100,
-    description: "Items originally ≤ HK$100",
-  },
-  {
-    tier: "$150",
-    label: "$150 Box",
-    price: 150,
-    maxOriginalPrice: 300,
-    description: "Items originally HK$101–300",
-  },
-  {
-    tier: "$300",
-    label: "$300 Box",
-    price: 300,
-    maxOriginalPrice: 500,
-    description: "Items originally HK$301–500",
-  },
-  {
-    tier: "$500",
-    label: "$500 Box",
-    price: 500,
-    maxOriginalPrice: 1000,
-    description: "Items originally HK$501–1,000",
-  },
-  {
-    tier: "$1500",
-    label: "$1500 Box",
-    price: 1500,
-    maxOriginalPrice: 3000,
-    description: "Items originally HK$1,001–3,000",
-  },
-];
+    {
+      tier: "$50",
+      label: "$50 Box",
+      price: 50,
+      maxOriginalPrice: 100,
+      description: "Items originally ≤ HK$100",
+    },
+    {
+      tier: "$150",
+      label: "$150 Box",
+      price: 150,
+      maxOriginalPrice: 300,
+      description: "Items originally HK$101–300",
+    },
+    {
+      tier: "$300",
+      label: "$300 Box",
+      price: 300,
+      maxOriginalPrice: 500,
+      description: "Items originally HK$301–500",
+    },
+    {
+      tier: "$500",
+      label: "$500 Box",
+      price: 500,
+      maxOriginalPrice: 1000,
+      description: "Items originally HK$501–1,000",
+    },
+    {
+      tier: "$1500",
+      label: "$1500 Box",
+      price: 1500,
+      maxOriginalPrice: 3000,
+      description: "Items originally HK$1,001–3,000",
+    },
+  ];
 
 export type MysteryBoxPurchase = {
   id: string;

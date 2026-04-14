@@ -1,42 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { getCart, getProducts, setCart } from "@/lib/mvp-data";
+import {
+  getCartWithDetails,
+  updateCartItem,
+  type CartItemDetail,
+} from "@/lib/api-helpers";
 import { formatHKD } from "@/lib/format";
 
 export default function CartPage() {
-  const [, setVersion] = useState(0);
-  const products = getProducts();
-  const cartItems = getCart();
+  const [rows, setRows] = useState<CartItemDetail[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
-  const rows = cartItems
-    .map((item) => {
-      const product = products.find((entry) => entry.id === item.productId);
-      if (!product) return null;
-      return { product, quantity: item.quantity };
-    })
-    .filter(
-      (
-        entry,
-      ): entry is { product: (typeof products)[number]; quantity: number } =>
-        Boolean(entry),
-    );
+  const loadCart = async () => {
+    try {
+      const data = await getCartWithDetails();
+      setRows(data.items);
+      setSubtotal(data.subtotal);
+    } catch {
+      setRows([]);
+      setSubtotal(0);
+    } finally {
+      setLoaded(true);
+    }
+  };
 
-  const subtotal = rows.reduce(
-    (sum, row) => sum + row.product.price * row.quantity,
-    0,
-  );
+  useEffect(() => {
+    void loadCart();
+  }, []);
 
-  const updateQty = (productId: string, quantity: number) => {
-    const next = getCart()
-      .map((item) =>
-        item.productId === productId ? { ...item, quantity } : item,
-      )
-      .filter((item) => item.quantity > 0);
-    setCart(next);
-    setVersion((value) => value + 1);
+  const updateQty = async (productId: string, quantity: number) => {
+    try {
+      await updateCartItem(productId, quantity);
+      await loadCart();
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
@@ -47,7 +49,11 @@ export default function CartPage() {
           <h1>Your cart</h1>
         </div>
 
-        {rows.length === 0 ? (
+        {!loaded ? (
+          <div className="content-card" style={{ textAlign: "center", padding: "3rem 1rem" }}>
+            <p className="muted">Loading cart...</p>
+          </div>
+        ) : rows.length === 0 ? (
           <div
             className="content-card"
             style={{ textAlign: "center", padding: "3rem 1rem" }}
@@ -66,18 +72,18 @@ export default function CartPage() {
             <div className="content-card">
               <div className="cart-list">
                 {rows.map((row) => (
-                  <div key={row.product.id} className="cart-item">
+                  <div key={row.productId} className="cart-item">
                     <div className="cart-item-info">
-                      <strong>{row.product.title}</strong>
+                      <strong>{row.title}</strong>
                       <span className="muted">
-                        {formatHKD(row.product.price)} each
+                        {formatHKD(row.price)} each
                       </span>
                     </div>
                     <div className="cart-qty">
                       <button
                         className="qty-btn"
                         onClick={() =>
-                          updateQty(row.product.id, row.quantity - 1)
+                          updateQty(row.productId, row.quantity - 1)
                         }
                       >
                         −
@@ -86,14 +92,14 @@ export default function CartPage() {
                       <button
                         className="qty-btn"
                         onClick={() =>
-                          updateQty(row.product.id, row.quantity + 1)
+                          updateQty(row.productId, row.quantity + 1)
                         }
                       >
                         +
                       </button>
                     </div>
                     <div className="cart-item-total">
-                      {formatHKD(row.product.price * row.quantity)}
+                      {formatHKD(row.price * row.quantity)}
                     </div>
                   </div>
                 ))}

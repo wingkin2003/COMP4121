@@ -20,7 +20,10 @@ import {
     moveToMysteryBox,
     getCurrentAccount,
     getProductTier,
-} from "@/lib/mvp-data";
+    getUserProfile,
+    updateUserEmail,
+    uploadImage,
+} from "@/lib/api-helpers";
 import {
     BuyOrder,
     Product,
@@ -80,90 +83,107 @@ export default function ProfilePage() {
     const [mysteryMsg, setMysteryMsg] = useState<string | null>(null);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
+        const load = async () => {
             const user = getCurrentAccount();
             setAccount(user);
 
-            const raw = localStorage.getItem("currentUser");
-            if (raw) {
-                try {
-                    const parsed = JSON.parse(raw);
-                    setEmail(parsed.email || "");
-                } catch {
-                    setEmail("");
-                }
+            try {
+                const profile = await getUserProfile();
+                setEmail(profile.email || "");
+            } catch {
+                setEmail("");
             }
 
-            setProducts(getProductsByAccount(user));
-            setBuyOrders(getBuyOrdersByAccount(user));
-            setRentals(getRentalsByAccount(user));
-            setRentalRequests(getRentalRequestsByAccount(user));
-            setRentalLendings(getRentalLendingsByAccount(user));
-            setRentalBookings(getRentalOrdersByAccount(user));
-            setStaleProducts(getStaleProducts(user));
-            setMysteryPurchases(getMysteryBoxPurchasesByAccount(user));
-            setLoaded(true);
-        }, 0);
+            try {
+                const [prods, buys, rents, reqs, lends, books, stale, mystery] =
+                    await Promise.all([
+                        getProductsByAccount(user),
+                        getBuyOrdersByAccount(user),
+                        getRentalsByAccount(user),
+                        getRentalRequestsByAccount(user),
+                        getRentalLendingsByAccount(user),
+                        getRentalOrdersByAccount(user),
+                        getStaleProducts(),
+                        getMysteryBoxPurchasesByAccount(user),
+                    ]);
+                setProducts(prods);
+                setBuyOrders(buys);
+                setRentals(rents);
+                setRentalRequests(reqs);
+                setRentalLendings(lends);
+                setRentalBookings(books);
+                setStaleProducts(stale);
+                setMysteryPurchases(mystery);
+            } catch { /* ignore */ }
 
-        return () => window.clearTimeout(timer);
+            setLoaded(true);
+        };
+        void load();
     }, []);
 
-    const refreshProducts = () => {
-        setProducts(getProductsByAccount(account));
+    const refreshProducts = async () => {
+        try { setProducts(await getProductsByAccount(account)); } catch { /* ignore */ }
     };
 
-    const refreshBuyOrders = () => {
-        setBuyOrders(getBuyOrdersByAccount(account));
+    const refreshBuyOrders = async () => {
+        try { setBuyOrders(await getBuyOrdersByAccount(account)); } catch { /* ignore */ }
     };
 
-    const refreshRentals = () => {
-        setRentals(getRentalsByAccount(account));
+    const refreshRentals = async () => {
+        try { setRentals(await getRentalsByAccount(account)); } catch { /* ignore */ }
     };
 
-    const refreshRentalRequests = () => {
-        setRentalRequests(getRentalRequestsByAccount(account));
+    const refreshRentalRequests = async () => {
+        try { setRentalRequests(await getRentalRequestsByAccount(account)); } catch { /* ignore */ }
     };
 
-    const refreshRentalBookings = () => {
-        setRentalBookings(getRentalOrdersByAccount(account));
+    const refreshRentalBookings = async () => {
+        try { setRentalBookings(await getRentalOrdersByAccount(account)); } catch { /* ignore */ }
     };
 
-    const refreshRentalLendings = () => {
-        setRentalLendings(getRentalLendingsByAccount(account));
+    const refreshRentalLendings = async () => {
+        try { setRentalLendings(await getRentalLendingsByAccount(account)); } catch { /* ignore */ }
     };
 
-    const handleCancelBooking = (id: string) => {
-        updateRentalOrder(id, { status: "cancelled" });
-        refreshRentalBookings();
-        setRentalBookingMsg("Booking cancelled.");
-        setTimeout(() => setRentalBookingMsg(null), 2000);
+    const handleCancelBooking = async (id: string) => {
+        try {
+            await updateRentalOrder(id, { status: "cancelled" });
+            await refreshRentalBookings();
+            setRentalBookingMsg("Booking cancelled.");
+            setTimeout(() => setRentalBookingMsg(null), 2000);
+        } catch { /* ignore */ }
     };
 
-    const refreshStaleProducts = () => {
-        setStaleProducts(getStaleProducts(account));
-        setProducts(getProductsByAccount(account));
+    const refreshStaleProducts = async () => {
+        try {
+            const [stale, prods] = await Promise.all([
+                getStaleProducts(),
+                getProductsByAccount(account),
+            ]);
+            setStaleProducts(stale);
+            setProducts(prods);
+        } catch { /* ignore */ }
     };
 
-    const handleRentalStatusChange = (id: string, status: RentalStatus) => {
-        updateRental(id, { status });
-        refreshRentals();
+    const handleRentalStatusChange = async (id: string, status: RentalStatus) => {
+        try { await updateRental(id, { status }); await refreshRentals(); } catch { /* ignore */ }
     };
 
-    const handleRentalUnpublish = (id: string) => {
-        updateRental(id, { status: "unpublished" });
-        refreshRentals();
+    const handleRentalUnpublish = async (id: string) => {
+        try { await updateRental(id, { status: "unpublished" }); await refreshRentals(); } catch { /* ignore */ }
     };
 
-    const handleRentalRequestStatusChange = (id: string, status: RentalRequest["status"]) => {
-        updateRentalRequest(id, { status });
-        refreshRentalRequests();
+    const handleRentalRequestStatusChange = async (id: string, status: RentalRequest["status"]) => {
+        try { await updateRentalRequest(id, { status }); await refreshRentalRequests(); } catch { /* ignore */ }
     };
 
-    const handleRentalRequestUnpublish = (id: string) => {
-        updateRentalRequest(id, { status: "closed" });
-        refreshRentalRequests();
-        setRentalRequestMsg("Rent request unpublished.");
-        setTimeout(() => setRentalRequestMsg(null), 2000);
+    const handleRentalRequestUnpublish = async (id: string) => {
+        try {
+            await updateRentalRequest(id, { status: "closed" });
+            await refreshRentalRequests();
+            setRentalRequestMsg("Rent request unpublished.");
+            setTimeout(() => setRentalRequestMsg(null), 2000);
+        } catch { /* ignore */ }
     };
 
     const rentalRequestStatusLabel = (status: RentalRequest["status"]) => {
@@ -192,11 +212,13 @@ export default function ProfilePage() {
         }
     };
 
-    const handleMoveToMysteryBox = (productId: string) => {
-        moveToMysteryBox(productId);
-        refreshStaleProducts();
-        setMysteryMsg("Item moved to Mystery Box!");
-        setTimeout(() => setMysteryMsg(null), 2000);
+    const handleMoveToMysteryBox = async (productId: string) => {
+        try {
+            await moveToMysteryBox(productId);
+            await refreshStaleProducts();
+            setMysteryMsg("Item moved to Mystery Box!");
+            setTimeout(() => setMysteryMsg(null), 2000);
+        } catch { /* ignore */ }
     };
 
     const rentalStatusLabel = (s: RentalStatus) => {
@@ -219,14 +241,12 @@ export default function ProfilePage() {
         }
     };
 
-    const handleStatusChange = (id: string, status: ProductStatus) => {
-        updateProduct(id, { status });
-        refreshProducts();
+    const handleStatusChange = async (id: string, status: ProductStatus) => {
+        try { await updateProduct(id, { status }); await refreshProducts(); } catch { /* ignore */ }
     };
 
-    const handleUnpublish = (id: string) => {
-        updateProduct(id, { status: "unpublished" });
-        refreshProducts();
+    const handleUnpublish = async (id: string) => {
+        try { await updateProduct(id, { status: "unpublished" }); await refreshProducts(); } catch { /* ignore */ }
     };
 
     const startBuyEdit = (order: BuyOrder) => {
@@ -250,9 +270,8 @@ export default function ProfilePage() {
         setBuyMsg(null);
     };
 
-    const handleBuyStatusChange = (id: string, status: BuyOrderStatus) => {
-        updateBuyOrder(id, { status });
-        refreshBuyOrders();
+    const handleBuyStatusChange = async (id: string, status: BuyOrderStatus) => {
+        try { await updateBuyOrder(id, { status }); await refreshBuyOrders(); } catch { /* ignore */ }
     };
 
     const handleBuyImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,7 +289,7 @@ export default function ProfilePage() {
         if (buyFileRef.current) buyFileRef.current.value = "";
     };
 
-    const saveBuyOrder = () => {
+    const saveBuyOrder = async () => {
         if (!editingBuyId) return;
 
         const numericBudget = Number(buyBudget);
@@ -279,21 +298,30 @@ export default function ProfilePage() {
             return;
         }
 
-        updateBuyOrder(editingBuyId, {
-            title: buyTitle.trim(),
-            description: buyDescription.trim(),
-            budget: numericBudget,
-            category: buyCategory,
-            condition: buyCondition,
-            location: buyLocation.trim(),
-            buyerName: buyName.trim(),
-            status: buyStatus,
-            image: buyImagePreview || "",
-        });
-        refreshBuyOrders();
-        setEditingBuyId(null);
-        setBuyMsg("Buy request updated.");
-        setTimeout(() => setBuyMsg(null), 2000);
+        try {
+            // Upload new image if a file was selected
+            let imageUrl = buyImagePreview || "";
+            const file = buyFileRef.current?.files?.[0];
+            if (file) {
+                imageUrl = await uploadImage(file);
+            }
+
+            await updateBuyOrder(editingBuyId, {
+                title: buyTitle.trim(),
+                description: buyDescription.trim(),
+                budget: numericBudget,
+                category: buyCategory,
+                condition: buyCondition,
+                location: buyLocation.trim(),
+                buyerName: buyName.trim(),
+                status: buyStatus,
+                image: imageUrl,
+            });
+            await refreshBuyOrders();
+            setEditingBuyId(null);
+            setBuyMsg("Buy request updated.");
+            setTimeout(() => setBuyMsg(null), 2000);
+        } catch { setBuyMsg("Failed to update buy request."); }
     };
 
     const buyStatusLabel = (status: BuyOrderStatus) => {
@@ -322,14 +350,16 @@ export default function ProfilePage() {
         }
     };
 
-    const handleBuyUnpublish = (id: string) => {
-        updateBuyOrder(id, { status: "closed" });
-        refreshBuyOrders();
-        if (editingBuyId === id) {
-            setBuyStatus("closed");
-        }
-        setBuyMsg("Buy request unpublished.");
-        setTimeout(() => setBuyMsg(null), 2000);
+    const handleBuyUnpublish = async (id: string) => {
+        try {
+            await updateBuyOrder(id, { status: "closed" });
+            await refreshBuyOrders();
+            if (editingBuyId === id) {
+                setBuyStatus("closed");
+            }
+            setBuyMsg("Buy request unpublished.");
+            setTimeout(() => setBuyMsg(null), 2000);
+        } catch { /* ignore */ }
     };
 
     const startEdit = () => {
@@ -338,36 +368,22 @@ export default function ProfilePage() {
         setProfileMsg(null);
     };
 
-    const saveProfile = () => {
+    const saveProfile = async () => {
         const trimmedEmail = editEmail.trim();
         if (!trimmedEmail) {
             setProfileMsg("Email cannot be empty.");
             return;
         }
 
-        // update users array
-        const users: { username: string; email: string; password: string }[] =
-            JSON.parse(localStorage.getItem("users") || "[]");
-        const idx = users.findIndex((u) => u.username === account);
-        if (idx !== -1) {
-            users[idx].email = trimmedEmail;
-            localStorage.setItem("users", JSON.stringify(users));
+        try {
+            const updated = await updateUserEmail(trimmedEmail);
+            setEmail(updated.email);
+            setEditing(false);
+            setProfileMsg("Profile updated.");
+            setTimeout(() => setProfileMsg(null), 2000);
+        } catch {
+            setProfileMsg("Failed to update profile.");
         }
-
-        // update currentUser
-        const raw = localStorage.getItem("currentUser");
-        if (raw) {
-            try {
-                const parsed = JSON.parse(raw);
-                parsed.email = trimmedEmail;
-                localStorage.setItem("currentUser", JSON.stringify(parsed));
-            } catch { /* ignore */ }
-        }
-
-        setEmail(trimmedEmail);
-        setEditing(false);
-        setProfileMsg("Profile updated.");
-        setTimeout(() => setProfileMsg(null), 2000);
     };
 
     if (!loaded) {
@@ -981,9 +997,9 @@ export default function ProfilePage() {
                                         <td>{formatHKD(b.total)}</td>
                                         <td>
                                             <span className={`status-badge ${b.status === "active" ? "status-selling" :
-                                                    b.status === "returned" ? "status-expired" :
-                                                        b.status === "cancelled" ? "status-unpublished" :
-                                                            "status-sold"
+                                                b.status === "returned" ? "status-expired" :
+                                                    b.status === "cancelled" ? "status-unpublished" :
+                                                        "status-sold"
                                                 }`}>
                                                 {b.status === "active" ? "Active" :
                                                     b.status === "returned" ? "Returned" :

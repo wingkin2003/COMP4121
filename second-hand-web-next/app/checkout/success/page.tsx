@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { formatHKD } from "@/lib/format";
-import { addOrder, getCart, setCart } from "@/lib/mvp-data";
+import { createOrder, getCartWithDetails } from "@/lib/api-helpers";
 import type { CartItem } from "@/lib/mvp-types";
 
 const PENDING_ORDER_KEY = "secondlife-pending-checkout-order";
 const PROCESSED_SESSION_PREFIX = "secondlife-stripe-session-processed-";
-const COMMISSION_RATE = 0.04;
 
 type PendingOrderDraft = {
   items: CartItem[];
@@ -80,28 +79,24 @@ export default function CheckoutSuccessPage() {
             }
           }
 
-          const subtotal = draft?.subtotal ?? stripeAmount;
-          const commission =
-            draft?.commission ?? Math.round(subtotal * COMMISSION_RATE);
-          const sellerPayout = draft?.sellerPayout ?? subtotal - commission;
           const shippingAddress =
             draft?.shippingAddress || payload.shippingAddress || "Not provided";
-          const items = draft?.items ?? getCart();
 
-          if (items.length > 0) {
-            addOrder({
-              id: crypto.randomUUID(),
-              createdAt: new Date().toISOString(),
-              items,
-              subtotal,
-              commission,
-              sellerPayout,
-              total: subtotal,
-              shippingAddress,
-            });
+          // Get items from draft or from current cart
+          let items = draft?.items;
+          if (!items || items.length === 0) {
+            const cartData = await getCartWithDetails();
+            items = cartData.items.map((i) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+            }));
           }
 
-          setCart([]);
+          if (items.length > 0) {
+            // Backend creates the order, marks products as sold, and clears cart
+            await createOrder(items, shippingAddress);
+          }
+
           sessionStorage.removeItem(PENDING_ORDER_KEY);
           localStorage.setItem(processedKey, "1");
         }

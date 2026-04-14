@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addBuyNegotiation, getBuyOrders, getCurrentAccount } from "@/lib/mvp-data";
+import { addBuyNegotiation, getBuyOrder, getCurrentAccount } from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { BuyOrder, ProductCondition, PRODUCT_CONDITIONS } from "@/lib/mvp-types";
 
@@ -26,9 +26,16 @@ export default function BuyRequestDetailPage() {
   const [offerMode, setOfferMode] = useState<"negotiate" | "sales">("negotiate");
 
   useEffect(() => {
-    const found = getBuyOrders().find((entry) => entry.id === id) ?? null;
-    setRequest(found);
-    setLoaded(true);
+    let cancelled = false;
+    async function load() {
+      const found = await getBuyOrder(id);
+      if (!cancelled) {
+        setRequest(found);
+        setLoaded(true);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
@@ -78,7 +85,7 @@ export default function BuyRequestDetailPage() {
     );
   }
 
-  const handleSubmitNegotiation = () => {
+  const handleSubmitNegotiation = async () => {
     setFormError(null);
     const numericPrice = offerMode === "sales" ? request.budget : Number(offeredPrice);
 
@@ -105,24 +112,24 @@ export default function BuyRequestDetailPage() {
       }
     }
 
-    addBuyNegotiation({
-      id: crypto.randomUUID(),
-      buyOrderId: request.id,
-      buyOrderTitle: request.title,
-      mode: offerMode,
-      sellerAccount: getCurrentAccount(),
-      sellerName: sellerName.trim(),
-      sellerPhone: sellerPhone.trim(),
-      sellingItemTitle: offerMode === "sales" ? request.title : sellingItemTitle.trim(),
-      offeredPrice: numericPrice,
-      condition: offerMode === "sales" ? request.condition : condition,
-      meetupLocation: offerMode === "sales" ? request.location || "" : meetupLocation.trim(),
-      note: note.trim(),
-      status: "submitted",
-      createdAt: new Date().toISOString(),
-    });
-
-    setSubmitted(true);
+    try {
+      await addBuyNegotiation({
+        buyOrderId: request.id,
+        buyOrderTitle: request.title,
+        mode: offerMode,
+        sellerAccount: getCurrentAccount(),
+        sellerName: sellerName.trim(),
+        sellerPhone: sellerPhone.trim(),
+        sellingItemTitle: offerMode === "sales" ? request.title : sellingItemTitle.trim(),
+        offeredPrice: numericPrice,
+        condition: offerMode === "sales" ? request.condition : condition,
+        meetupLocation: offerMode === "sales" ? request.location || "" : meetupLocation.trim(),
+        note: note.trim(),
+      });
+      setSubmitted(true);
+    } catch {
+      setFormError("Failed to submit. Please try again.");
+    }
   };
 
   return (

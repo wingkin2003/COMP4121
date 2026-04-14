@@ -7,7 +7,7 @@ import {
     getMysteryBoxCounts,
     purchaseMysteryBox,
     getMysteryBoxPurchasesByAccount,
-} from "@/lib/mvp-data";
+} from "@/lib/api-helpers";
 import { MYSTERY_BOX_TIERS, MysteryBoxPurchase } from "@/lib/mvp-types";
 import { formatHKD, formatHKDate } from "@/lib/format";
 
@@ -20,14 +20,20 @@ export default function MysteryBoxPage() {
     const [animating, setAnimating] = useState(false);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
+        const load = async () => {
             const user = getCurrentAccount();
             setAccount(user);
-            setCounts(getMysteryBoxCounts());
-            setPurchases(getMysteryBoxPurchasesByAccount(user));
+            try {
+                const [c, p] = await Promise.all([
+                    getMysteryBoxCounts(),
+                    getMysteryBoxPurchasesByAccount(user),
+                ]);
+                setCounts(c);
+                setPurchases(p);
+            } catch { /* ignore */ }
             setLoaded(true);
-        }, 0);
-        return () => window.clearTimeout(timer);
+        };
+        void load();
     }, []);
 
     const handlePurchase = (tierKey: string) => {
@@ -35,13 +41,19 @@ export default function MysteryBoxPage() {
         setReveal(null);
 
         // Simulate box-opening animation delay
-        setTimeout(() => {
-            const result = purchaseMysteryBox(tierKey, account);
-            if (result) {
-                setReveal(result);
-                setCounts(getMysteryBoxCounts());
-                setPurchases(getMysteryBoxPurchasesByAccount(account));
-            }
+        setTimeout(async () => {
+            try {
+                const result = await purchaseMysteryBox(tierKey);
+                if (result) {
+                    setReveal(result);
+                    const [c, p] = await Promise.all([
+                        getMysteryBoxCounts(),
+                        getMysteryBoxPurchasesByAccount(account),
+                    ]);
+                    setCounts(c);
+                    setPurchases(p);
+                }
+            } catch { /* ignore */ }
             setAnimating(false);
         }, 1500);
     };

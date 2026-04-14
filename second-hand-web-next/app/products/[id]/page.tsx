@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
-import { addToCart, getProducts } from "@/lib/mvp-data";
+import { addToCart, getProduct } from "@/lib/api-helpers";
 import { formatHKD, formatHKDate } from "@/lib/format";
 import { Product } from "@/lib/mvp-types";
 import { CommentSection } from "@/components/CommentSection";
@@ -16,9 +16,16 @@ export default function ProductDetailPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const found = getProducts().find((entry) => entry.id === id) ?? null;
-    setProduct(found);
-    setLoaded(true);
+    let cancelled = false;
+    async function load() {
+      const found = await getProduct(id);
+      if (!cancelled) {
+        setProduct(found);
+        setLoaded(true);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
   }, [id]);
 
   if (!loaded) {
@@ -46,9 +53,13 @@ export default function ProductDetailPage() {
     );
   }
 
-  const handleAdd = () => {
-    addToCart(product.id);
-    setMessage("Added to cart.");
+  const handleAdd = async () => {
+    try {
+      await addToCart(product.id);
+      setMessage("Added to cart.");
+    } catch {
+      setMessage("Failed to add to cart.");
+    }
   };
 
   return (

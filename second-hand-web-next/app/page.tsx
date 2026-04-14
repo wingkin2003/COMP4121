@@ -2,39 +2,14 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-
-type User = {
-  username: string;
-  password: string;
-  email: string;
-};
+import { loginUser, ApiError } from "@/lib/api-helpers";
 
 export default function LoginPage() {
-  const [users] = useState<User[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    const storedUsers = JSON.parse(
-      localStorage.getItem("users") || "[]",
-    ) as User[];
-    if (storedUsers.length === 0) {
-      const defaultUser: User = {
-        username: "1234567",
-        password: "password123",
-        email: "test@example.com",
-      };
-      localStorage.setItem("users", JSON.stringify([defaultUser]));
-      return [defaultUser];
-    }
-
-    return storedUsers;
-  });
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [shakeForm, setShakeForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error";
@@ -66,33 +41,30 @@ export default function LoginPage() {
     return true;
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!validateInput()) {
       return;
     }
 
-    const user = users.find(
-      (currentUser) =>
-        currentUser.username === username && currentUser.password === password,
-    );
-
-    if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      localStorage.setItem("isLoggedIn", "true");
+    setIsSubmitting(true);
+    try {
+      await loginUser(username, password);
       showTimedMessage("Login success...", "success");
       setTimeout(() => {
         window.location.href = "/marketplace";
       }, 2000);
-      return;
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Account or password error";
+      showTimedMessage(msg, "error");
+      setShakeForm(true);
+      setTimeout(() => {
+        setShakeForm(false);
+      }, 500);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    showTimedMessage("Account or password error", "error");
-    setShakeForm(true);
-    setTimeout(() => {
-      setShakeForm(false);
-    }, 500);
   };
 
   const handleReset = () => {

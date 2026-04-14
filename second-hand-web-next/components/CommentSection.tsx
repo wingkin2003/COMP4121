@@ -1,53 +1,34 @@
 // components/CommentSection.tsx
 "use client";
 
-import { useState } from "react";
-
-// ========== Type Definitions ==========
-type Reply = {
-  id: string;
-  userId: string;
-  userName: string;
-  userInitial: string;
-  content: string;
-  createdAt: Date;
-};
-
-type Comment = {
-  id: string;
-  userId: string;
-  userName: string;
-  userInitial: string;
-  content: string;
-  createdAt: Date;
-  replies: Reply[];
-};
-
-// ========== Current User (replace with real auth data) ==========
-const CURRENT_USER = {
-  id: "me",
-  name: "You",
-  initial: "Y",
-};
-
-// ========== Helper ==========
-const generateId = () =>
-  `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+import { useEffect, useState } from "react";
+import {
+  getComments,
+  addComment,
+  getCurrentAccount,
+  type CommentData,
+} from "@/lib/api-helpers";
 
 // ========== Component Props ==========
 interface CommentSectionProps {
-  productId: string; // Reserved for future backend integration
+  productId: string;
 }
 
 export function CommentSection({ productId }: CommentSectionProps) {
-  // No mock data – start with empty comments array
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentData[]>([]);
   const [newCommentText, setNewCommentText] = useState("");
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleString("en-US", {
+  const currentUser = getCurrentAccount();
+  const userInitial = currentUser ? currentUser.charAt(0).toUpperCase() : "?";
+
+  useEffect(() => {
+    getComments(productId).then(setComments).catch(() => { });
+  }, [productId]);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -55,58 +36,47 @@ export function CommentSection({ productId }: CommentSectionProps) {
     });
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newCommentText.trim()) return;
-    const newComment: Comment = {
-      id: generateId(),
-      userId: CURRENT_USER.id,
-      userName: CURRENT_USER.name,
-      userInitial: CURRENT_USER.initial,
-      content: newCommentText.trim(),
-      createdAt: new Date(),
-      replies: [],
-    };
-    setComments([newComment, ...comments]);
-    setNewCommentText("");
+    try {
+      const created = await addComment(productId, newCommentText.trim());
+      setComments([created, ...comments]);
+      setNewCommentText("");
+    } catch { /* ignore */ }
   };
 
   const handleCommentKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
-    // Enter submits; Shift+Enter keeps newline support.
     if (
       event.key === "Enter" &&
       !event.shiftKey &&
       !event.nativeEvent.isComposing
     ) {
       event.preventDefault();
-      handleAddComment();
+      void handleAddComment();
     }
   };
 
-  const handleAddReply = (commentId: string) => {
+  const handleAddReply = async (commentId: string) => {
     const draft = replyDrafts[commentId] || "";
     if (!draft.trim()) return;
-    const newReply: Reply = {
-      id: generateId(),
-      userId: CURRENT_USER.id,
-      userName: CURRENT_USER.name,
-      userInitial: CURRENT_USER.initial,
-      content: draft.trim(),
-      createdAt: new Date(),
-    };
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c,
-      ),
-    );
-    // Clear reply draft and close reply box
-    setReplyDrafts((prev) => {
-      const newDrafts = { ...prev };
-      delete newDrafts[commentId];
-      return newDrafts;
-    });
-    setOpenReplyId(null);
+    try {
+      const created = await addComment(productId, draft.trim(), commentId);
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? { ...c, replies: [...c.replies, created] }
+            : c,
+        ),
+      );
+      setReplyDrafts((prev) => {
+        const newDrafts = { ...prev };
+        delete newDrafts[commentId];
+        return newDrafts;
+      });
+      setOpenReplyId(null);
+    } catch { /* ignore */ }
   };
 
   const toggleReply = (commentId: string) => {
@@ -131,12 +101,10 @@ export function CommentSection({ productId }: CommentSectionProps) {
 
   return (
     <div className="mt-8">
-      {/* No title – removed as requested */}
-
       {/* New comment form */}
       <div className="flex gap-3 mb-6">
         <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium flex-shrink-0">
-          {CURRENT_USER.initial}
+          {userInitial}
         </div>
         <div className="flex-1">
           <textarea
@@ -149,7 +117,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
           />
           <div className="flex justify-end mt-2">
             <button
-              onClick={handleAddComment}
+              onClick={() => void handleAddComment()}
               className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
             >
               Post Comment
@@ -169,18 +137,18 @@ export function CommentSection({ productId }: CommentSectionProps) {
           <div key={comment.id} className="border-b border-gray-100 pb-4">
             <div className="flex gap-3">
               <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium text-sm">
-                {comment.userInitial}
+                {(comment.userAccount || "?").charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="font-medium text-gray-800">
-                    {comment.userName}
+                    {comment.userAccount}
                   </span>
                   <span className="text-xs text-gray-400">
                     {formatDate(comment.createdAt)}
                   </span>
                 </div>
-                <p className="text-gray-700 mt-1">{comment.content}</p>
+                <p className="text-gray-700 mt-1">{comment.text}</p>
                 <button
                   onClick={() => toggleReply(comment.id)}
                   className="text-xs text-blue-500 mt-1 hover:underline"
@@ -192,7 +160,7 @@ export function CommentSection({ productId }: CommentSectionProps) {
                 {openReplyId === comment.id && (
                   <div className="mt-3 ml-2 flex gap-2">
                     <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium text-xs">
-                      {CURRENT_USER.initial}
+                      {userInitial}
                     </div>
                     <div className="flex-1">
                       <input
@@ -204,12 +172,12 @@ export function CommentSection({ productId }: CommentSectionProps) {
                           updateReplyDraft(comment.id, e.target.value)
                         }
                         onKeyDown={(e) =>
-                          e.key === "Enter" && handleAddReply(comment.id)
+                          e.key === "Enter" && void handleAddReply(comment.id)
                         }
                       />
                     </div>
                     <button
-                      onClick={() => handleAddReply(comment.id)}
+                      onClick={() => void handleAddReply(comment.id)}
                       className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs"
                     >
                       Send
@@ -223,19 +191,19 @@ export function CommentSection({ productId }: CommentSectionProps) {
                     {comment.replies.map((reply) => (
                       <div key={reply.id} className="flex gap-2">
                         <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-medium text-xs">
-                          {reply.userInitial}
+                          {(reply.userAccount || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-baseline gap-2 flex-wrap">
                             <span className="font-medium text-gray-800 text-sm">
-                              {reply.userName}
+                              {reply.userAccount}
                             </span>
                             <span className="text-xs text-gray-400">
                               {formatDate(reply.createdAt)}
                             </span>
                           </div>
                           <p className="text-gray-700 text-sm">
-                            {reply.content}
+                            {reply.text}
                           </p>
                         </div>
                       </div>

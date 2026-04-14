@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { registerUser, ApiError } from "@/lib/api-helpers";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -19,7 +20,9 @@ export default function RegisterPage() {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!username || !email || !password || !confirmPassword) {
@@ -39,23 +42,19 @@ export default function RegisterPage() {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    if (users.some((u: { username: string }) => u.username === username)) {
-      showTimedMessage("This student ID is already registered", "error");
-      return;
+    setIsSubmitting(true);
+    try {
+      await registerUser(username, email, password);
+      showTimedMessage("Account created! Redirecting...", "success");
+      setTimeout(() => {
+        window.location.href = "/marketplace";
+      }, 1500);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Registration failed";
+      showTimedMessage(msg, "error");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    users.push({ username, email, password });
-    localStorage.setItem("users", JSON.stringify(users));
-
-    // auto-login after register
-    localStorage.setItem("currentUser", JSON.stringify({ username, email, password }));
-    localStorage.setItem("isLoggedIn", "true");
-
-    showTimedMessage("Account created! Redirecting...", "success");
-    setTimeout(() => {
-      window.location.href = "/marketplace";
-    }, 1500);
   };
 
   const handleReset = () => {
