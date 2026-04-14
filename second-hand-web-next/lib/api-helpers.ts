@@ -33,7 +33,8 @@ import type {
 
 import { MYSTERY_BOX_TIERS } from "./mvp-types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_RAW = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = API_BASE_RAW.replace(/\/+$/, "");
 
 // ── Generic snake_case ↔ camelCase converters ──
 

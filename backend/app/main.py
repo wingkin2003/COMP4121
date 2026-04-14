@@ -36,6 +36,9 @@ if _extra:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_default_origins,
+    # Allow GitHub Codespaces forwarded frontend URLs like
+    # https://<name>-3000.app.github.dev and githubpreview.dev.
+    allow_origin_regex=r"https://.*-3000\.app\.github(\.dev|preview\.dev)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
